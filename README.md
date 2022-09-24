@@ -1,5 +1,5 @@
 # SelfJS
-Breaking discord's TOS to bot user accounts.
+It's just discord.js but for user accounts.
 
 An example of a echo bot:
 ```JS
