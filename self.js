@@ -32,17 +32,6 @@ module.exports = {
 		});
 	},
 
-	randomNonce: function() {
-		const chars = "1234567890";
-		let str = "";
-
-		for(let i = 0; i < 16; i++) {
-			str += chars[Math.floor(Math.random() * chars.length)];
-		}
-
-		return parseInt(str);
-	},
-
 	sendWebhookMessage: function(webhookID, webhookToken, message) {
 		let options = null;
 		let msgData = null;
@@ -385,6 +374,31 @@ module.exports = {
 				...module.exports.APIBaseOpt,
 				method: "GET",
 				path: `/api/v10/channels/${channelID}/messages?limit=${limit}`,
+				headers: {
+					"Authorization": this.token
+				}
+			};
+
+			return new Promise(function(resolve) {
+				const req = https.request(options, function(res) {
+					let chunks = [];
+
+					res.on("data", function(chunk) {
+						chunks.push(chunk);
+					}).on("end", function() {
+						resolve(JSON.parse(Buffer.concat(chunks)));
+					});
+				});
+
+				req.end();
+			});
+		}
+
+		getChannelData(channelID) {
+			const options = {
+				...module.exports.APIBaseOpt,
+				method: "GET",
+				path: `/api/v10/channels/${channelID}`,
 				headers: {
 					"Authorization": this.token
 				}
