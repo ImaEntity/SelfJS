@@ -1,6 +1,4 @@
 # SelfJS
-It's just discord.js but for user accounts.
-
 An example of a echo bot:
 ```JS
 const discord = require("selfJS");
