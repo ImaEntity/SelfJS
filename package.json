@@ -1,0 +1,7 @@
+{
+    "name": "SelfJS",
+    "version": "1.0.0",
+    "description": "Breaking discord's TOS to bot user accounts.",
+    "main": "index.js",
+    "author": "ImaEntity",
+}
