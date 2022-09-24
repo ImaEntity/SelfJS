@@ -3,7 +3,7 @@ Breaking discord's TOS to bot user accounts.
 
 An example of a echo bot:
 ```JS
-const discord = require("self.js");
+const discord = require("selfJS");
 const client = new discord.Client();
 
 (async function() {
