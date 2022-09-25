@@ -13,4 +13,5 @@
 | setRolesForMemeber | **Function** | **Client**  | {Server ID} {User ID} {Role IDs}          | Gives a user a role in a server.                               |
 | sendMessage        | **Function** | **Client**  | {Channel ID} {Content}                    | Sends a message to a channel.                                  |
 | replyToMessage     | **Function** | **Client**  | {Channel ID} {Message ID} {Content}       | Replies to a message to a channel.                             |
-| getMessages        | **Function** | **Client**  | {Channel ID} {Limit}                      | Gets an amount of messages in a channel from newest to oldest. |
+| getMessages        | **Function** | **Client**  | {Channel ID} {Amount}                     | Gets an amount of messages in a channel from newest to oldest. |
+| getChannelData     | **Function** | **Client**  | {Channel ID}                              | Gets info about a channel.                                     |
