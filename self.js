@@ -2,11 +2,12 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author ImaEntity
- * @version 1.0.0
+ * @version 1.0.3
  */
 
 const https = require("https");
 const ws = require("ws");
+const fs = require("fs");
 
 module.exports = {
 	CDNBaseOpt: {
@@ -30,6 +31,17 @@ module.exports = {
 		return new Promise(function(res) {
 			setTimeout(res, millis);
 		});
+	},
+
+	randomNonce: function() {
+		const chars = "1234567890";
+		let str = "";
+
+		for(let i = 0; i < 16; i++) {
+			str += chars[Math.floor(Math.random() * chars.length)];
+		}
+
+		return str;
 	},
 
 	sendWebhookMessage: function(webhookID, webhookToken, message) {
@@ -168,7 +180,7 @@ module.exports = {
 						setInterval(function() {
 							if(logMsgs) console.log("[MainControlSocket] Sending heartbeat");
 							this.socket.send(JSON.stringify({op: 1, d: sequenceID}));
-						}.bind(this), payload.d.heartbeat_interval - 2000);
+						}.bind(this), payload.d.heartbeat_interval	);
 					} else if(payload.op == 11) {
 						if(logMsgs) console.log("[MainControlSocket] Heartbeat ACK received");
 					} else if(payload.op == 0) {
@@ -241,7 +253,7 @@ module.exports = {
 		getRoles(severID, userID) {
 			const options = {
 				...module.exports.APIBaseOpt,
-				method: "POST",
+				method: "GET",
 				path: `/api/v10/users/${userID}/profile?with_mutual_guilds=false&guild_id=${serverID}`,
 				headers: {
 					"Authorization": this.token
@@ -250,7 +262,7 @@ module.exports = {
 
 			return new Promise(function(resolve) {
 				const req = https.request(options, function(res) {
-					let chunks = [];
+					const chunks = [];
 
 					res.on("data", function(chunk) {
 						chunks.push(chunk);
@@ -260,6 +272,95 @@ module.exports = {
 				});
 
 				req.end();
+			});
+		}
+
+		sendImage(channelID, imageName) {
+			const imgData = fs.readFileSync(imageName).toString();
+			const imgName = imageName.split('/').pop();
+			console.log(imgName);
+			const reqData = JSON.stringify({
+				files: [{
+					filename: imgName,
+					file_size: imgData.length,
+					id: 0
+				}]
+			});
+			const reqOpt = {
+				...module.exports.APIBaseOpt,
+				method: "POST",
+				path: `/api/v10/channels/${channelID}/attachments`,
+				headers: {
+					"Authorization": this.token,
+					"Content-Type": "application/json",
+					"Content-Length": reqData.length
+				}
+			};
+
+			return new Promise(function(resolve) {
+				const reqReq = https.request(reqOpt, function(reqRes) {
+					const reqChunks = [];
+
+					reqRes.on("data", function(chunk) {
+						reqChunks.push(chunk);
+					}).on("end", function() {
+						const data = JSON.parse(Buffer.concat(reqChunks));
+						console.log(data);
+						fs.writeFileSync("out.json", JSON.stringify(data, null, 4));
+						const uploadedFilename = data.attachments[0].upload_filename;
+						const imgOpt = {
+							port: 443,
+							host: data.attachments[0].upload_url.split('/')[2],
+							path: `/${data.attachments[0].upload_url.split('/').slice(3).join('/')}`,
+							headers: {
+								"Content-Type": "image/png",
+								"Content-Length": imgData.length
+							}
+						};
+
+						const imgReq = https.request(imgOpt, function(imgRes) {
+							imgRes.on("end", function() {
+								const msgData = JSON.stringify({
+									content: "",
+									attachments: [{
+										filename: imgName,
+										id: "0",
+										uploaded_filename: uploadedFilename
+									}]
+								});
+								const msgOpt = {
+									...module.exports.APIBaseOpt,
+									method: "POST",
+									path: `/api/v10/channels/${channelID}`,
+									headers: {
+										"Content-Type": "application/json",
+										"Content-Length": msgData.length,
+										"Authorization": this.token
+									}
+								};
+
+								const msgReq = https.request(msgOpt, function(msgRes) {
+									const msgChunks = [];
+
+									msgRes.on("data", function(chunk) {
+										msgChunks.push(chunk);
+									}).on("end", function() {
+										resolve(JSON.parse(Buffer.concat(msgChunks)));
+									});
+								});
+
+								msgReq.write(msgData);
+								msgReq.end();
+							});
+						});
+
+						reqReq.write(imgData);
+						reqReq.end();
+					});
+				});
+
+				reqReq.write(reqData);
+				reqReq.end();
 			});
 		}
 
@@ -275,7 +376,7 @@ module.exports = {
 
 			return new Promise(function(resolve) {
 				const req = https.request(options, function(res) {
-					let chunks = [];
+					const chunks = [];
 
 					res.on("data", function(chunk) {
 						chunks.push(chunk);
@@ -326,7 +427,7 @@ module.exports = {
 
 			return new Promise(function(resolve) {
 				const req = https.request(options, function(res) {
-					let chunks = [];
+					const chunks = [];
 
 					res.on("data", function(chunk) {
 						chunks.push(chunk);
@@ -355,7 +456,7 @@ module.exports = {
 
 			return new Promise(function(resolve) {
 				const req = https.request(options, function(res) {
-					let chunks = [];
+					const chunks = [];
 
 					res.on("data", function(chunk) {
 						chunks.push(chunk);
@@ -381,32 +482,7 @@ module.exports = {
 
 			return new Promise(function(resolve) {
 				const req = https.request(options, function(res) {
-					let chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.end();
-			});
-		}
-
-		getChannelData(channelID) {
-			const options = {
-				...module.exports.APIBaseOpt,
-				method: "GET",
-				path: `/api/v10/channels/${channelID}`,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					let chunks = [];
+					const chunks = [];
 
 					res.on("data", function(chunk) {
 						chunks.push(chunk);
@@ -431,7 +507,7 @@ module.exports = {
 
 			return new Promise(function(resolve) {
 				const req = https.request(options, function(res) {
-					let chunks = [];
+					const chunks = [];
 
 					res.on("data", function(chunk) {
 						chunks.push(chunk);
@@ -545,7 +621,7 @@ module.exports = {
 
 			return new Promise(function(resolve) {
 				const req = https.request(options, function(res) {
-					let chunks = [];
+					const chunks = [];
 
 					res.on("data", function(chunk) {
 						chunks.push(chunk);
@@ -726,7 +802,7 @@ module.exports = {
 
 			return new Promise(function(resolve) {
 				const req = https.request(options, function(res) {
-					let chunks = [];
+					const chunks = [];
 
 					res.on("data", function(chunk) {
 						chunks.push(chunk);
