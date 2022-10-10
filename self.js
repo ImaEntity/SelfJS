@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author ImaEntity
- * @version 1.0.3
+ * @version 1.0.4
  */
 
 const https = require("https");
@@ -248,6 +248,35 @@ module.exports = {
 					self_deaf: false
 				}
 			}));
+		}
+
+		getDMChannel(userID) {
+			const channelData = JSON.stringify({recipients: [userID]});
+			const options = {
+				...module.exports.APIBaseOpt,
+				method: "POST",
+				path: "/api/v10/users/@me/channels",
+				headers: {
+					"Authorization": this.token,
+					"Content-Type": "application/json",
+					"Content-Length": channelData.length
+				}
+			};
+
+			return new Promise(function(resolve) {
+				const req = https.request(options, function(res) {
+					const chunks = [];
+
+					res.on("data", function(chunk) {
+						chunks.push(chunk);
+					}).on("end", function() {
+						resolve(JSON.parse(Buffer.concat(chunks)));
+					});
+				});
+
+				req.write(channelData);
+				req.end();
+			});
 		}
 
 		getRoles(severID, userID) {
