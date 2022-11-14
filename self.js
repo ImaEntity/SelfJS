@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author ImaEntity
- * @version 1.0.4
+ * @version 1.0.3
  */
 
 const https = require("https");
@@ -44,12 +44,12 @@ module.exports = {
 		return str;
 	},
 
-	sendWebhookMessage: function(webhookID, webhookToken, message) {
+	sendWebhookMessage: function(webhookID, webhookToken, inputData) {
 		let options = null;
 		let msgData = null;
 
-		if(message) {
-			msgData = JSON.stringify({content: message});
+		if(inputData) {
+			msgData = JSON.stringify(inputData);
 			options = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -60,7 +60,7 @@ module.exports = {
 				}
 			};
 		} else {
-			msgData = JSON.stringify({content: webhookToken});
+			msgData = JSON.stringify(webhookToken);
 			options = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -78,7 +78,7 @@ module.exports = {
 			});
 
 			req.write(msgData);
-				req.end();
+			req.end();
 		});
 	},
 
@@ -218,6 +218,8 @@ module.exports = {
 
 							if(typeof this.onEditFunction == "function") this.onEditFunction(payload.d);
 						} else if(payload.t == "VOICE_SERVER_UPDATE") {
+							console.log(payload);
+							
 							const endpoint = payload.d.endpoint;
 							const serverID = payload.d.guild_id;
 							const token = payload.d.token;
@@ -925,6 +927,31 @@ module.exports = {
 				});
 
 				req.write(noteData);
+				req.end();
+			});
+		}
+
+		getChannelData(channelID) {
+			const options = {
+				...module.exports.APIBaseOpt,
+				method: "GET",
+				path: `/api/v10/channels/${channelID}`,
+				headers: {
+					"Authorization": this.token
+				}
+			};
+
+			return new Promise(function(resolve) {
+				const req = https.request(options, function(res) {
+					let chunks = [];
+
+					res.on("data", function(chunk) {
+						chunks.push(chunk);
+					}).on("end", function() {
+						resolve(JSON.parse(Buffer.concat(chunks)));
+					});
+				});
+
 				req.end();
 			});
 		}
