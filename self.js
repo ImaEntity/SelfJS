@@ -144,7 +144,7 @@ module.exports = {
 							d: {
 								protocol: "udp",
 								data: {
-									address: "69.71.3.2",
+									address: "127.0.0.1",
 									port: this.port,
 									mode: "xsalsa20_poly1305_suffix"
 								}
