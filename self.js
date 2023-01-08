@@ -2,12 +2,14 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author ImaEntity
- * @version 1.0.3
+ * @version 1.0.7
  */
 
 const https = require("https");
 const ws = require("ws");
 const fs = require("fs");
+const crypto = require("crypto");
+const dgram = require("dgram");
 
 module.exports = {
 	CDNBaseOpt: {
@@ -21,6 +23,7 @@ module.exports = {
 	},
 
 	status: {
+		DEFAULT: -1,
 		PLAYING: 0,
 		LISTENING: 2,
 		WATCHING: 3,
@@ -33,11 +36,11 @@ module.exports = {
 		});
 	},
 
-	randomNonce: function() {
+	randomNonce: function(len) {
 		const chars = "1234567890";
 		let str = "";
 
-		for(let i = 0; i < 16; i++) {
+		for(let i = 0; i < len; i++) {
 			str += chars[Math.floor(Math.random() * chars.length)];
 		}
 
@@ -83,20 +86,24 @@ module.exports = {
 	},
 
 	VoiceConnection: class {
-		constructor(userID, sessionID, token) {
+		constructor() {
 			this.endpoint = null;
 			this.serverID = null;
-			this.token = token;
-			this.sessionID = sessionID;
-			this.userID = userID;
+			this.channelID = null;
+			this.token = null;
+			this.sessionID = null;
+			this.userID = null;
 			this.socket = null;
+			this.ip = null;
+			this.ssrc = null;
+			this.port = null;
+			this.key = null;
+			this.mediaSessionID = null;
 		}
 
-		connect(endpoint, serverID, logMsgs) {
+		connect(logMsgs) {
 			return new Promise(function(resolve) {
-				this.endpoint = endpoint;
-				this.severID = serverID;
-				this.socket = new ws(`wss://${endpoint}`);
+				this.socket = new ws(`wss://${this.endpoint}?v=4&encoding=json`);
 
 				this.socket.on("open", function() {
 					if(logMsgs) console.log("[RTCControlSocket] Sending hello");
@@ -118,6 +125,9 @@ module.exports = {
 					if(payload.op == 8) {
 						if(logMsgs) console.log("[RTCControlSocket] Hello ACK received");
 
+						if(logMsgs) console.log("[RTCControlSocket] Sending heartbeat");
+						this.socket.send(JSON.stringify({op: 3, d: Date.now()}));
+
 						setInterval(function() {
 							if(logMsgs) console.log("[RTCControlSocket] Sending heartbeat");
 							this.socket.send(JSON.stringify({op: 3, d: Date.now()}));
@@ -125,7 +135,23 @@ module.exports = {
 					} else if(payload.op == 6) {
 						if(logMsgs) console.log("[RTCControlSocket] Heartbeat ACK received");
 					} else if(payload.op == 2) {
-						console.log(payload);
+						this.ssrc = payload.d.ssrc;
+						this.port = payload.d.port;
+						this.ip = payload.d.ip;
+
+						this.socket.send(JSON.stringify({
+							op: 1,
+							d: {
+								protocol: "udp",
+								data: {
+									address: "69.71.3.2",
+									port: this.port,
+									mode: "xsalsa20_poly1305_suffix"
+								}
+							}
+						}));
+					} else if(payload.op == 4) {
+						this.key = payload.d.secret_key;
 					}
 				}.bind(this));
 			}.bind(this));
@@ -140,7 +166,9 @@ module.exports = {
 			this.sessionID = null;
 			this.onMessageFunction = null;
 			this.onEditFunction = null;
-			this.voice = null;
+			this.voice = new module.exports.VoiceConnection();
+			this.sequenceID = null;
+			this.resumeURL = null;
 		}
 
 		login(token, isMobile, logMsgs) {
@@ -149,8 +177,6 @@ module.exports = {
 			 	this.socket = new ws("wss://gateway.discord.gg?v=10&encoding=json");
 				this.userID = null;
 				this.sessionID = null;
-
-				let sequenceID = null;
 
 				this.socket.on("open", function() {
 					if(logMsgs) console.log("[MainControlSocket] Sending hello");
@@ -168,27 +194,28 @@ module.exports = {
 					}));
 				}.bind(this));
 
-				this.socket.on("message", async function(payload) {
+				const socketMessageFunction = async function(payload) {
 					payload = JSON.parse(payload.toString());
 
 					if(payload.op == 10) {
 						if(logMsgs) console.log("[MainControlSocket] Hello ACK received");
 
 						if(logMsgs) console.log("[MainControlSocket] Sending heartbeat");
-						this.socket.send(JSON.stringify({op: 1, d: sequenceID}));
+						this.socket.send(JSON.stringify({op: 1, d: this.sequenceID}));
 
 						setInterval(function() {
 							if(logMsgs) console.log("[MainControlSocket] Sending heartbeat");
-							this.socket.send(JSON.stringify({op: 1, d: sequenceID}));
-						}.bind(this), payload.d.heartbeat_interval	);
+							this.socket.send(JSON.stringify({op: 1, d: this.sequenceID}));
+						}.bind(this), payload.d.heartbeat_interval);
 					} else if(payload.op == 11) {
 						if(logMsgs) console.log("[MainControlSocket] Heartbeat ACK received");
 					} else if(payload.op == 0) {
-						sequenceID = payload.s;
+						this.sequenceID = payload.s;
 
 						if(payload.t == "READY") {
 							this.userID = payload.d.user.id;
 							this.sessionID = payload.d.session_id;
+							this.resumeURL = payload.d.resume_gateway_url;
 
 							if(logMsgs) console.log("[MainControlSocket] Ready message received");
 							resolve();
@@ -218,17 +245,48 @@ module.exports = {
 
 							if(typeof this.onEditFunction == "function") this.onEditFunction(payload.d);
 						} else if(payload.t == "VOICE_SERVER_UPDATE") {
-							console.log(payload);
-							
 							const endpoint = payload.d.endpoint;
 							const serverID = payload.d.guild_id;
 							const token = payload.d.token;
 
-							this.voice = new module.exports.VoiceConnection(this.userID, this.sessionID, token);
-							await this.voice.connect(endpoint, serverID, logMsgs);
+							this.voice.userID = this.userID;
+							this.voice.endpoint = endpoint;
+							this.voice.serverID = serverID ?? this.voice.channelID;
+							this.voice.token = token;
+
+							if(this.voice.sessionID != null) {
+								await this.voice.connect(logMsgs);
+							}
+						} else if(payload.t == "VOICE_STATE_UPDATE") {
+							this.voice.sessionID = payload.d.session_id;
+
+							if(this.voice.userID != null) {
+								await this.voice.connect(logMsgs);
+							}
 						}
+					} else if(payload.op == 7) {
+						if(logMsgs) console.log("[MainControlSocket] Reconnect message received");
+
+						this.socket = new ws("wss://gateway.discord.gg?v=10&encoding=json");
+
+						this.socket.on("open", function() {
+							if(logMsgs) console.log("[MainControlSocket] Resume message sent");
+
+							this.socket.send(JSON.stringify({
+								op: 6,
+								d: {
+									token: this.token,
+									session_id: this.sessionID,
+									seq: this.sequenceID
+								}
+							}));
+						}.bind(this));
+
+						this.socket.on("message", socketMessageFunction);
 					}
-				}.bind(this));
+				}.bind(this);
+
+				this.socket.on("message", socketMessageFunction);
 			}.bind(this));
 		}
 
@@ -240,16 +298,77 @@ module.exports = {
 			this.onEditFunction = editFunc;
 		}
 
-		joinVoiceChannel(guildID, channelID) {
+		joinVoiceChannel(guildID, channelID, mute, deaf) {
+			this.voice.channelID = channelID;
+
 			this.socket.send(JSON.stringify({
 				op: 4,
 				d: {
 					guild_id: guildID,
 					channel_id: channelID,
-					self_mute: false,
-					self_deaf: false
+					self_mute: mute ?? false,
+					self_deaf: deaf ?? false
 				}
 			}));
+		}
+
+		waitForVoice() {
+			return new Promise(function(resolve) {
+				const loop = setInterval(function() {
+					if(!this.voice.key) return;
+
+					clearInterval(loop);
+					resolve();
+				}.bind(this));
+			}.bind(this));
+		}
+
+		playSound(filename) {
+			const time = Date.now();
+			const audioData = fs.readFileSync(filename);
+			const iv = crypto.randomBytes(16);
+			const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(this.voice.key), iv);
+
+			let encryptedData = cipher.update(audioData) + cipher.final();
+			let packetBuf = Buffer.from([
+				0x80,
+				0x78,
+				(this.sequenceID & 0xFF00) >> 8,
+				this.sequenceID & 0xFF,
+				(time & 0xFF000000) >> 24,
+				(time & 0xFF0000) >> 16,
+				(time & 0xFF00) >> 8,
+				time & 0xFF,
+				(this.voice.ssrc & 0xFF000000) >> 24,
+				(this.voice.ssrc & 0xFF0000) >> 16,
+				(this.voice.ssrc & 0xFF00) >> 8,
+				this.voice.ssrc & 0xFF,
+			]);
+
+			encryptedData = Buffer.concat([iv, Buffer.from(encryptedData)]);
+			packetBuf = Buffer.concat([packetBuf, encryptedData]);
+
+			this.voice.socket.send(JSON.stringify({
+				op: 5,
+				d: {
+					speaking: 1,
+					delay: 0,
+					ssrc: this.voice.ssrc
+				}
+			}));
+
+			const client = dgram.createSocket("udp4");
+
+			client.send(packetBuf, 0, packetBuf.length, this.voice.port, this.voice.ip, function() {
+				this.voice.socket.send(JSON.stringify({
+					op: 5,
+					d: {
+						speaking: 0,
+						delay: 0,
+						ssrc: this.voice.ssrc
+					}
+				}));
+			}.bind(this));
 		}
 
 		getDMChannel(userID) {
@@ -551,7 +670,7 @@ module.exports = {
 			});
 		}
 
-		removeFromChannel(channelID, userID, silent) {
+		removeFromChannel(channelID, userID) {
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "DELETE",
