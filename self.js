@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author ImaEntity
- * @version 1.0.8
+ * @version 1.1.0
  */
 
 const https = require("https");
@@ -425,9 +425,9 @@ module.exports = {
 			});
 		}
 
-		sendImage(channelID, imageName) {
-			const imageData = fs.readFileSync(imageName);
-			const requestData = JSON.stringify({files:[{filename:imageName,file_size:imageData.length,id:'1'}]});
+		uploadFile(channelID, fileName) {
+			const fileData = fs.readFileSync(fileName);
+			const requestData = JSON.stringify({files:[{filename:fileName,file_size:fileData.length,id:'1'}]});
 			const requestOptions = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -442,29 +442,61 @@ module.exports = {
 			return new Promise(function(resolve) {
 				const requestReq = https.request(requestOptions, function(requestRes) {
 					const requestChunks = [];
+					const fileTable = {
+						png: "image/png",
+						jpg: "image/jpeg",
+						jpeg: "image/jpeg",
+						js: "application/javascript",
+						json: "application/json",
+						html: "text/html",
+						mp4: "video/mp4",
+						mp3: "audio/mpeg",
+						css: "text/css",
+						c: "text/x-c",
+						cpp: "text/x-c",
+						h: "text/x-c",
+						hpp: "text/x-c",
+						bat: "application/x-msdownload",
+						exe: "application/x-msdownload",
+						asm: "text/x-asm",
+						webp: "image/webp",
+						webm: "video/webm",
+						mov: "video/quicktime",
+						mkv: "video/x-matroska",
+						java: "text/x-java-source",
+						class: "application/java-vm",
+						jar: "application/java-archive",
+						wav: "audio/x-wav",
+						zip: "application/zip",
+						rar: "application/x-rar-compressed",
+						txt: "text/plain",
+						log: "text/plain",
+						lua: "text/x-lua",
+						xml: "application/xml"
+					};
 
 					requestRes.on("data", function(chunk) {
 						requestChunks.push(chunk);
 					}).on("end", function() {
 						const requestResData = JSON.parse(Buffer.concat(requestChunks));
-						const imageOptions = {
+						const fileOptions = {
 							host: "discord-attachments-uploads-prd.storage.googleapis.com",
 							port: 443,
 							method: "PUT",
 							path: `/${requestResData.attachments[0].upload_url.split('/').slice(3).join('/')}`,
 							headers: {
-								"Content-Type": "image/png",
-								"Content-Length": imageData.length
+								"Content-Type": fileTable[fileName.split('.').slice(-1)[0]] ?? false,
+								"Content-Length": fileData.length
 							}
 						};
 
-						const imageRequest = https.request(imageOptions, function(imageRes) {
-							const imageChunks = [];
+						const fileRequest = https.request(fileOptions, function(fileRes) {
+							const fileChunks = [];
 							
-							imageRes.on("data", function(chunk) {
-								imageChunks.push(chunk);
+							fileRes.on("data", function(chunk) {
+								fileChunks.push(chunk);
 							}).on("end", function() {
-								const finalData = JSON.stringify({content:"",attachments:[{id:'0',filename:imageName,uploaded_filename:requestResData.attachments[0].upload_filename}]});
+								const finalData = JSON.stringify({content:"",attachments:[{id:'0',filename:fileName,uploaded_filename:requestResData.attachments[0].upload_filename}]});
 								const finalOptions = {
 									...module.exports.APIBaseOpt,
 									method: "POST",
@@ -491,8 +523,8 @@ module.exports = {
 							}.bind(this));
 						}.bind(this));
 
-						imageRequest.write(imageData);
-						imageRequest.end();
+						fileRequest.write(fileData);
+						fileRequest.end();
 					}.bind(this));
 				}.bind(this));
 
