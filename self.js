@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author ImaEntity
- * @version 1.0.7
+ * @version 1.0.8
  */
 
 const https = require("https");
@@ -426,92 +426,79 @@ module.exports = {
 		}
 
 		sendImage(channelID, imageName) {
-			const imgData = fs.readFileSync(imageName).toString();
-			const imgName = imageName.split('/').pop();
-			console.log(imgName);
-			const reqData = JSON.stringify({
-				files: [{
-					filename: imgName,
-					file_size: imgData.length,
-					id: 0
-				}]
-			});
-			const reqOpt = {
+			const imageData = fs.readFileSync(imageName);
+			const requestData = JSON.stringify({files:[{filename:imageName,file_size:imageData.length,id:'1'}]});
+			const requestOptions = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
 				path: `/api/v10/channels/${channelID}/attachments`,
 				headers: {
-					"Authorization": this.token,
 					"Content-Type": "application/json",
-					"Content-Length": reqData.length
+					"Authorization": this.token,
+					"Content-Length": requestData.length
 				}
 			};
 
 			return new Promise(function(resolve) {
-				const reqReq = https.request(reqOpt, function(reqRes) {
-					const reqChunks = [];
+				const requestReq = https.request(requestOptions, function(requestRes) {
+					const requestChunks = [];
 
-					reqRes.on("data", function(chunk) {
-						reqChunks.push(chunk);
+					requestRes.on("data", function(chunk) {
+						requestChunks.push(chunk);
 					}).on("end", function() {
-						const data = JSON.parse(Buffer.concat(reqChunks));
-						console.log(data);
-						fs.writeFileSync("out.json", JSON.stringify(data, null, 4));
-						const uploadedFilename = data.attachments[0].upload_filename;
-						const imgOpt = {
+						const requestResData = JSON.parse(Buffer.concat(requestChunks));
+						const imageOptions = {
+							host: "discord-attachments-uploads-prd.storage.googleapis.com",
 							port: 443,
-							host: data.attachments[0].upload_url.split('/')[2],
-							path: `/${data.attachments[0].upload_url.split('/').slice(3).join('/')}`,
+							method: "PUT",
+							path: `/${requestResData.attachments[0].upload_url.split('/').slice(3).join('/')}`,
 							headers: {
 								"Content-Type": "image/png",
-								"Content-Length": imgData.length
+								"Content-Length": imageData.length
 							}
 						};
 
-						const imgReq = https.request(imgOpt, function(imgRes) {
-							imgRes.on("end", function() {
-								const msgData = JSON.stringify({
-									content: "",
-									attachments: [{
-										filename: imgName,
-										id: "0",
-										uploaded_filename: uploadedFilename
-									}]
-								});
-								const msgOpt = {
+						const imageRequest = https.request(imageOptions, function(imageRes) {
+							const imageChunks = [];
+							
+							imageRes.on("data", function(chunk) {
+								imageChunks.push(chunk);
+							}).on("end", function() {
+								const finalData = JSON.stringify({content:"",attachments:[{id:'0',filename:imageName,uploaded_filename:requestResData.attachments[0].upload_filename}]});
+								const finalOptions = {
 									...module.exports.APIBaseOpt,
 									method: "POST",
-									path: `/api/v10/channels/${channelID}`,
+									path: `/api/v10/channels/${channelID}/messages`,
 									headers: {
 										"Content-Type": "application/json",
-										"Content-Length": msgData.length,
-										"Authorization": this.token
+										"Authorization": this.token,
+										"Content-Length": finalData.length
 									}
 								};
 
-								const msgReq = https.request(msgOpt, function(msgRes) {
-									const msgChunks = [];
+								const finalReq = https.request(finalOptions, function(finalRes) {
+									const finalChunks = [];
 
-									msgRes.on("data", function(chunk) {
-										msgChunks.push(chunk);
+									finalRes.on("data", function(chunk) {
+										finalChunks.push(chunk);
 									}).on("end", function() {
-										resolve(JSON.parse(Buffer.concat(msgChunks)));
+										resolve(JSON.parse(Buffer.concat(finalChunks)));
 									});
 								});
 
-								msgReq.write(msgData);
-								msgReq.end();
-							});
-						});
+								finalReq.write(finalData);
+								finalReq.end();
+							}.bind(this));
+						}.bind(this));
 
-						reqReq.write(imgData);
-						reqReq.end();
-					});
-				});
+						imageRequest.write(imageData);
+						imageRequest.end();
+					}.bind(this));
+				}.bind(this));
 
-				reqReq.write(reqData);
-				reqReq.end();
-			});
+				requestReq.write(requestData);
+				requestReq.end();
+			}.bind(this));
 		}
 
 		getUserData(userID) {
