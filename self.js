@@ -1,7 +1,7 @@
 /**
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
- * @author ImaEntity
+ * @author Эмберс
  * @version 1.1.0
  */
 
