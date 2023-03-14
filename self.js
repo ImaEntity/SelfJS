@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.1.0
+ * @version 1.1.2.0
  */
 
 const https = require("https");
@@ -425,9 +425,17 @@ module.exports = {
 			});
 		}
 
-		uploadFile(channelID, fileName) {
+		uploadFile(channelID, fileName, msgContent, messageID) {
 			const fileData = fs.readFileSync(fileName);
-			const requestData = JSON.stringify({files:[{filename:fileName,file_size:fileData.length,id:'1'}]});
+			const requestData = JSON.stringify({
+				files: [
+					{
+						filename: fileName,
+						file_size: fileData.length,
+						id: '1'
+					}
+				]
+			});
 			const requestOptions = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -496,7 +504,27 @@ module.exports = {
 							fileRes.on("data", function(chunk) {
 								fileChunks.push(chunk);
 							}).on("end", function() {
-								const finalData = JSON.stringify({content:"",attachments:[{id:'0',filename:fileName,uploaded_filename:requestResData.attachments[0].upload_filename}]});
+								let finalData = JSON.stringify({
+									content: msgContent ?? "",
+									attachments: [
+										{
+											id: '0',
+											filename: fileName,
+											uploaded_filename: requestResData.attachments[0].upload_filename
+										}
+									]
+								});
+								
+								if(messageID) {
+									finalData = JSON.parse(finalData);
+									finalData.message_reference = {
+										channel_id: channelID,
+										message_id: messageID
+									};
+
+									finalData = JSON.stringify(finalData);
+								}
+
 								const finalOptions = {
 									...module.exports.APIBaseOpt,
 									method: "POST",
