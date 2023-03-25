@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.1.2.0
+ * @version 1.2.2
  */
 
 const https = require("https");
@@ -34,17 +34,6 @@ module.exports = {
 		return new Promise(function(res) {
 			setTimeout(res, millis);
 		});
-	},
-
-	randomNonce: function(len) {
-		const chars = "1234567890";
-		let str = "";
-
-		for(let i = 0; i < len; i++) {
-			str += chars[Math.floor(Math.random() * chars.length)];
-		}
-
-		return str;
 	},
 
 	sendWebhookMessage: function(webhookID, webhookToken, inputData) {
@@ -85,79 +74,6 @@ module.exports = {
 		});
 	},
 
-	VoiceConnection: class {
-		constructor() {
-			this.endpoint = null;
-			this.serverID = null;
-			this.channelID = null;
-			this.token = null;
-			this.sessionID = null;
-			this.userID = null;
-			this.socket = null;
-			this.ip = null;
-			this.ssrc = null;
-			this.port = null;
-			this.key = null;
-			this.mediaSessionID = null;
-		}
-
-		connect(logMsgs) {
-			return new Promise(function(resolve) {
-				this.socket = new ws(`wss://${this.endpoint}?v=4&encoding=json`);
-
-				this.socket.on("open", function() {
-					if(logMsgs) console.log("[RTCControlSocket] Sending hello");
-
-					this.socket.send(JSON.stringify({
-						op: 0,
-						d: {
-							server_id: this.serverID,
-							user_id: this.userID,
-							session_id: this.sessionID,
-							token: this.token
-						}
-					}));
-				}.bind(this));
-
-				this.socket.on("message", function(payload) {
-					payload = JSON.parse(payload.toString());
-
-					if(payload.op == 8) {
-						if(logMsgs) console.log("[RTCControlSocket] Hello ACK received");
-
-						if(logMsgs) console.log("[RTCControlSocket] Sending heartbeat");
-						this.socket.send(JSON.stringify({op: 3, d: Date.now()}));
-
-						setInterval(function() {
-							if(logMsgs) console.log("[RTCControlSocket] Sending heartbeat");
-							this.socket.send(JSON.stringify({op: 3, d: Date.now()}));
-						}.bind(this), payload.d.heartbeat_interval);
-					} else if(payload.op == 6) {
-						if(logMsgs) console.log("[RTCControlSocket] Heartbeat ACK received");
-					} else if(payload.op == 2) {
-						this.ssrc = payload.d.ssrc;
-						this.port = payload.d.port;
-						this.ip = payload.d.ip;
-
-						this.socket.send(JSON.stringify({
-							op: 1,
-							d: {
-								protocol: "udp",
-								data: {
-									address: "127.0.0.1",
-									port: this.port,
-									mode: "xsalsa20_poly1305_suffix"
-								}
-							}
-						}));
-					} else if(payload.op == 4) {
-						this.key = payload.d.secret_key;
-					}
-				}.bind(this));
-			}.bind(this));
-		}
-	},
-
 	Client: class {
 		constructor() {
 			this.userID = null;
@@ -166,9 +82,9 @@ module.exports = {
 			this.sessionID = null;
 			this.onMessageFunction = null;
 			this.onEditFunction = null;
-			this.voice = new module.exports.VoiceConnection();
 			this.sequenceID = null;
 			this.resumeURL = null;
+			this.statusUpdateFunction = null;
 		}
 
 		login(token, isMobile, logMsgs) {
@@ -244,25 +160,12 @@ module.exports = {
 							try {payload.d.author.self = payload.d.author.id == this.userID;} catch(e) {}
 
 							if(typeof this.onEditFunction == "function") this.onEditFunction(payload.d);
-						} else if(payload.t == "VOICE_SERVER_UPDATE") {
-							const endpoint = payload.d.endpoint;
-							const serverID = payload.d.guild_id;
-							const token = payload.d.token;
+						} else if(payload.t == "PRESENCE_UPDATE") {
+							try {payload.d.author.self = payload.d.author.id == this.userID;} catch(e) {}
 
-							this.voice.userID = this.userID;
-							this.voice.endpoint = endpoint;
-							this.voice.serverID = serverID ?? this.voice.channelID;
-							this.voice.token = token;
-
-							if(this.voice.sessionID != null) {
-								await this.voice.connect(logMsgs);
-							}
-						} else if(payload.t == "VOICE_STATE_UPDATE") {
-							this.voice.sessionID = payload.d.session_id;
-
-							if(this.voice.userID != null) {
-								await this.voice.connect(logMsgs);
-							}
+							if(typeof this.statusUpdateFunction == "function") this.statusUpdateFunction(payload.d);
+						} else {
+							console.log(payload);
 						}
 					} else if(payload.op == 7) {
 						if(logMsgs) console.log("[MainControlSocket] Reconnect message received");
@@ -283,6 +186,8 @@ module.exports = {
 						}.bind(this));
 
 						this.socket.on("message", socketMessageFunction);
+					} else {
+						console.log(payload);
 					}
 				}.bind(this);
 
@@ -298,77 +203,8 @@ module.exports = {
 			this.onEditFunction = editFunc;
 		}
 
-		joinVoiceChannel(guildID, channelID, mute, deaf) {
-			this.voice.channelID = channelID;
-
-			this.socket.send(JSON.stringify({
-				op: 4,
-				d: {
-					guild_id: guildID,
-					channel_id: channelID,
-					self_mute: mute ?? false,
-					self_deaf: deaf ?? false
-				}
-			}));
-		}
-
-		waitForVoice() {
-			return new Promise(function(resolve) {
-				const loop = setInterval(function() {
-					if(!this.voice.key) return;
-
-					clearInterval(loop);
-					resolve();
-				}.bind(this));
-			}.bind(this));
-		}
-
-		playSound(filename) {
-			const time = Date.now();
-			const audioData = fs.readFileSync(filename);
-			const iv = crypto.randomBytes(16);
-			const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(this.voice.key), iv);
-
-			let encryptedData = cipher.update(audioData) + cipher.final();
-			let packetBuf = Buffer.from([
-				0x80,
-				0x78,
-				(this.sequenceID & 0xFF00) >> 8,
-				this.sequenceID & 0xFF,
-				(time & 0xFF000000) >> 24,
-				(time & 0xFF0000) >> 16,
-				(time & 0xFF00) >> 8,
-				time & 0xFF,
-				(this.voice.ssrc & 0xFF000000) >> 24,
-				(this.voice.ssrc & 0xFF0000) >> 16,
-				(this.voice.ssrc & 0xFF00) >> 8,
-				this.voice.ssrc & 0xFF,
-			]);
-
-			encryptedData = Buffer.concat([iv, Buffer.from(encryptedData)]);
-			packetBuf = Buffer.concat([packetBuf, encryptedData]);
-
-			this.voice.socket.send(JSON.stringify({
-				op: 5,
-				d: {
-					speaking: 1,
-					delay: 0,
-					ssrc: this.voice.ssrc
-				}
-			}));
-
-			const client = dgram.createSocket("udp4");
-
-			client.send(packetBuf, 0, packetBuf.length, this.voice.port, this.voice.ip, function() {
-				this.voice.socket.send(JSON.stringify({
-					op: 5,
-					d: {
-						speaking: 0,
-						delay: 0,
-						ssrc: this.voice.ssrc
-					}
-				}));
-			}.bind(this));
+		onStatusUpdate(statusFunc) {
+			this.statusUpdateFunction = statusFunc;
 		}
 
 		getDMChannel(userID) {
@@ -400,7 +236,7 @@ module.exports = {
 			});
 		}
 
-		getRoles(severID, userID) {
+		getRoles(serverID, userID) {
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "GET",
@@ -809,11 +645,20 @@ module.exports = {
 			});
 		}
 
-		getAvatar(userID, avatarID) {
+		async getAvatar(userID) {
+			let avatarID = null;
+
+			try {
+				avatarID = await this.getUserData(userID);
+				avatarID = avatarID.user.avatar;
+			} catch(e) {
+				return null;
+			}
+
 			const options = {
 				...module.exports.CDNBaseOpt,
 				method: "GET",
-				path: `/avatars/${userID}/${avatarID}.webp?size=512`
+				path: `/avatars/${userID}/${avatarID}.webp?size=256`
 			};
 
 			return new Promise(function(resolve) {
@@ -823,6 +668,7 @@ module.exports = {
 					res.on("data", function(chunk) {
 						chunks.push(chunk);
 					}).on("end", function() {
+						console.log(Buffer.concat(chunks)); 
 						resolve(Buffer.concat(chunks));
 					});
 				});
