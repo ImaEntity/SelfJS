@@ -164,8 +164,6 @@ module.exports = {
 							try {payload.d.author.self = payload.d.author.id == this.userID;} catch(e) {}
 
 							if(typeof this.statusUpdateFunction == "function") this.statusUpdateFunction(payload.d);
-						} else {
-							console.log(payload);
 						}
 					} else if(payload.op == 7) {
 						if(logMsgs) console.log("[MainControlSocket] Reconnect message received");
@@ -186,8 +184,6 @@ module.exports = {
 						}.bind(this));
 
 						this.socket.on("message", socketMessageFunction);
-					} else {
-						console.log(payload);
 					}
 				}.bind(this);
 
