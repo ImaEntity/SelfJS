@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.2.2
+ * @version 1.2.3
  */
 
 const https = require("https");
@@ -259,6 +259,11 @@ module.exports = {
 
 		uploadFile(channelID, fileName, msgContent, messageID) {
 			const fileData = fs.readFileSync(fileName);
+
+			if(fileData.length >= 8388608) return null;
+
+			fileName = fileName.split('/').pop();
+
 			const requestData = JSON.stringify({
 				files: [
 					{
