@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.2.3
+ * @version 1.2.4
  */
 
 const https = require("https");
@@ -257,10 +257,10 @@ module.exports = {
 			});
 		}
 
-		uploadFile(channelID, fileName, msgContent, messageID) {
+		uploadFile(channelID, fileName, msgContent = "", messageID = null) {
 			const fileData = fs.readFileSync(fileName);
 
-			if(fileData.length >= 8388608) return null;
+			if(fileData.length >= 26214400) return null;
 
 			fileName = fileName.split('/').pop();
 
@@ -342,7 +342,7 @@ module.exports = {
 								fileChunks.push(chunk);
 							}).on("end", function() {
 								let finalData = JSON.stringify({
-									content: msgContent ?? "",
+									content: messageContent,
 									attachments: [
 										{
 											id: '0',
@@ -646,7 +646,7 @@ module.exports = {
 			});
 		}
 
-		async getAvatar(userID) {
+		async getAvatar(userID, size = 256) {
 			let avatarID = null;
 
 			try {
@@ -659,7 +659,7 @@ module.exports = {
 			const options = {
 				...module.exports.CDNBaseOpt,
 				method: "GET",
-				path: `/avatars/${userID}/${avatarID}.webp?size=256`
+				path: `/avatars/${userID}/${avatarID}.webp?size=${size}`
 			};
 
 			return new Promise(function(resolve) {
@@ -669,7 +669,6 @@ module.exports = {
 					res.on("data", function(chunk) {
 						chunks.push(chunk);
 					}).on("end", function() {
-						console.log(Buffer.concat(chunks)); 
 						resolve(Buffer.concat(chunks));
 					});
 				});
