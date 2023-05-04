@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.2.4
+ * @version 1.2.5
  */
 
 const https = require("https");
@@ -342,7 +342,7 @@ module.exports = {
 								fileChunks.push(chunk);
 							}).on("end", function() {
 								let finalData = JSON.stringify({
-									content: messageContent,
+									content: msgContent,
 									attachments: [
 										{
 											id: '0',
