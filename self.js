@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.2.5
+ * @version 1.3.5
  */
 
 const https = require("https");
@@ -396,6 +396,53 @@ module.exports = {
 				requestReq.write(requestData);
 				requestReq.end();
 			}.bind(this));
+		}
+
+		search(channelID, options) {
+			options = options || {};
+
+			const pinned = options.pinned ?? null;
+			const author = options.author ?? null;
+			const mentions = options.mentions ?? null;
+			const has = options.has ?? null;
+			const minDate = options.minDate ?? null;
+			const maxDate = options.maxData ?? null;
+			const content = options.content ?? null;
+			const offset = options.offset ?? null;
+
+			let path = `/api/v10/channels/${channelID}/messages/search?`;
+
+			if(pinned != null) path += `pinned=${pinned}&`;
+			if(minDate != null) path += `min_id=${minDate}&`;
+			if(maxDate != null) path += `max_id=${maxDate}&`;
+			if(offset != null) path += `offset=${offset}&`;
+			if(content != null) path += `content=${encodeURI(content)}&`;
+			if(author != null) path += author.map((e) => `author_id=${e}`).join('&') + '&';
+			if(mentions != null) path += mentions.map((e) => `mentions=${e}`).join('&') + '&';
+			if(has != null) path += has.map((e) => `has=${e}`).join('&');
+
+			const requestOptions = {
+				...module.exports.APIBaseOpt,
+				method: "GET",
+				path,
+				headers: {
+					"Authorization": this.token
+				}
+			};
+			
+			return new Promise(function(resolve) {
+				const req = https.request(requestOptions, function(res) {
+					const chunks = [];
+
+					res.on("data", function(chunk) {
+						chunks.push(chunk);
+					}).on("end", function() {
+						resolve(JSON.parse(Buffer.concat(chunks)));
+					});
+				});
+
+				req.end();
+			});
 		}
 
 		getUserData(userID) {
