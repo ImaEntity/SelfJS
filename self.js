@@ -1,6 +1,6 @@
 /**
  * @name SelfJS
- * @description Breaking discord's TOS to bot user accounts.
+ * @description Breaking Discord's TOS to bot user accounts.
  * @author Эмберс
  * @version 1.3.5
  */
