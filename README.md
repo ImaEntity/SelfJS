@@ -1,4 +1,6 @@
 # SelfJS
+Install: npm i @imaentity/selfjs
+
 An example of an echo bot:
 ```JS
 const discord = require("@imaentity/SelfJS");
