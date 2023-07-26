@@ -1,5 +1,5 @@
 {
-    "name": "SelfJS",
+    "name": "@imaentity/selfjs",
     "version": "1.3.5",
     "description": "Breaking Discord's TOS to bot user accounts.",
     "main": "self.js",
