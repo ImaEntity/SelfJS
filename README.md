@@ -1,5 +1,5 @@
 # SelfJS
-Install: npm i @imaentity/selfjs
+## Install: npm i @imaentity/selfjs
 
 An example of an echo bot:
 ```JS
