@@ -1,7 +1,7 @@
 # SelfJS
 An example of an echo bot:
 ```JS
-const discord = require("selfJS");
+const discord = require("SelfJS");
 const client = new discord.Client();
 
 (async function() {
