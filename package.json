@@ -1,6 +1,6 @@
 {
     "name": "@imaentity/selfjs",
-    "version": "1.3.6",
+    "version": "1.3.7",
     "description": "Breaking Discord's TOS to bot user accounts.",
     "main": "self.js",
     "repository": {
@@ -17,5 +17,8 @@
     "bugs": {
         "url": "https://github.com/ImaEntity/SelfJS/issues"
     },
-    "homepage": "https://github.com/ImaEntity/SelfJS#readme"
+    "homepage": "https://github.com/ImaEntity/SelfJS#readme",
+    "dependencies": {
+        "ws": "^7.5.4"
+    }
 }
