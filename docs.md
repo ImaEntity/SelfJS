@@ -10,7 +10,7 @@
 # Class
 - **Client**: This class allows the interaction with the Discord server. The following are its methods:
 
-  - **login(token, isMobile, logMsgs)**: Logs in the client to Discord.
+  - **login(token, isMobile = false, logMsgs = false)**: Logs in the client to Discord.
 
   - **onMessage(msgFunc)**: Function to be executed when a message is received.
 
