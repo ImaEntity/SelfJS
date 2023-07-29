@@ -8,8 +8,6 @@
 const https = require("https");
 const ws = require("ws");
 const fs = require("fs");
-const crypto = require("crypto");
-const dgram = require("dgram");
 
 module.exports = {
 	CDNBaseOpt: {
