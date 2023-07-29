@@ -87,7 +87,7 @@ module.exports = {
 			this.statusUpdateFunction = null;
 		}
 
-		login(token, isMobile, logMsgs) {
+		login(token, isMobile = false, logMsgs = false) {
 			return new Promise(function(resolve) {
 				this.token = token;
 			 	this.socket = new ws("wss://gateway.discord.gg?v=10&encoding=json");
