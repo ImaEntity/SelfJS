@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.3.7
+ * @version 1.3.9
  */
 
 const https = require("https");
@@ -255,7 +255,7 @@ module.exports = {
 			});
 		}
 
-		uploadFile(channelID, fileName, msgContent = "", messageID = null) {
+		uploadFile(channelID, fileName, isSpoiled = false, msgContent = "", messageID = null) {
 			const fileData = fs.readFileSync(fileName);
 
 			if(fileData.length >= 26214400) return null;
@@ -619,8 +619,21 @@ module.exports = {
 		}
 
 		leaveChannel(channelID) {
+			const options = {
+				...module.exports.APIBaseOpt,
+				method: "DELETE",
+				path: `/api/v10/channels/${channelID}`,
+				headers: {
+					"Authorization": this.token
+				}
+			};
+
 			return new Promise(function(resolve) {
-				this.removeFromChannel(channelID, this.userID).then(resolve);
+				const req = https.request(options, function(res) {
+					res.on("end", resolve);
+				});
+				
+				req.end();
 			}.bind(this));
 		}
 
