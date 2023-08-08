@@ -344,7 +344,7 @@ module.exports = {
 									attachments: [
 										{
 											id: '0',
-											filename: isSpoiled ? "SPOILER_" : "" + fileName,
+											filename: (isSpoiled ? "SPOILER_" : "") + fileName,
 											uploaded_filename: requestResData.attachments[0].upload_filename
 										}
 									]
