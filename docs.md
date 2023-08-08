@@ -22,7 +22,7 @@
 
   - **getRoles(serverID, userID)**: Gets the roles for a user in a server.
 
-  - **uploadFile(channelID, fileName, msgContent = "", messageID = null)**: Uploads a file to the specified channel.
+  - **uploadFile(channelID, fileName, isSpoiled = false, msgContent = "", messageID = null)**: Uploads a file to the specified channel.
 
   - **search(channelID, options)**: Search for messages in a channel based on the specified options.
 
