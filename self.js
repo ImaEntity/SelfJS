@@ -322,6 +322,7 @@ module.exports = {
 						requestChunks.push(chunk);
 					}).on("end", function() {
 						const requestResData = JSON.parse(Buffer.concat(requestChunks));
+					
 						const fileOptions = {
 							host: "discord-attachments-uploads-prd.storage.googleapis.com",
 							port: 443,
