@@ -23,8 +23,10 @@ module.exports = {
 	status: {
 		DEFAULT: -1,
 		PLAYING: 0,
+		STREAMING: 1,
 		LISTENING: 2,
 		WATCHING: 3,
+		CUSTOM: 4,
 		COMPETING: 5
 	},
 
@@ -870,18 +872,15 @@ module.exports = {
 			});
 		}
 
-		setStatus(status, activity, type) {
-			return new Promise(function(resolve) {
+		setStatus(status, activities, afk = false) {
+			return new Promise(function (resolve) {
 				this.socket.send(JSON.stringify({
 					op: 3,
 					d: {
 						since: Date.now(),
 						status,
-						activities: [{
-							name: activity,
-							type
-						}],
-						afk: false
+						activities,
+						afk
 					}
 				}));
 

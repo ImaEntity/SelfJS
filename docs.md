@@ -64,7 +64,7 @@
 
   - **deleteMessage(channelID, messageID)**: Deletes a message.
 
-  - **setStatus(status, activity, type)**: Sets the status of the client.
+  - **setStatus(status, activities, afk = false)**: Sets the status of the client.
 
   - **createChannel(userIDs)**: Creates a new channel with the specified users.
 
