@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.4.8
+ * @version 1.5.9
  */
 
 const https = require("https");
