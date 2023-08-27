@@ -10,6 +10,12 @@
 # Class
 - **Client**: This class allows the interaction with the Discord server. The following are its methods:
 
+  - **userID**: The client's user ID.
+  
+  - **token**: The client's token.
+
+  - **latency**: The latency of the client's websocket connection.
+
   - **login(token, isMobile = false, logMsgs = false)**: Logs in the client to Discord.
 
   - **onMessage(msgFunc)**: Function to be executed when a message is received.

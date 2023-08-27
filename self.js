@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.5.9
+ * @version 1.7.9
  */
 
 const https = require("https");
@@ -85,6 +85,9 @@ module.exports = {
 			this.sequenceID = null;
 			this.resumeURL = null;
 			this.statusUpdateFunction = null;
+			this.messageDeleteFunction = null;
+			this.latency = null;
+			this.beforeHB = null;
 		}
 
 		login(token, isMobile = false, logMsgs = false) {
@@ -103,8 +106,8 @@ module.exports = {
 							token: this.token,
 							properties: {
 								$os: isMobile ? "linux" : "windows",
-								$browser: isMobile ? "Discord iOS" : "disco",
-								$device: isMobile ? "discord.gblk" : "disco"
+								$browser: isMobile ? "Discord iOS" : "SelfJS",
+								$device: isMobile ? "discord.gblk" : "SelfJS"
 							}
 						}
 					}));
@@ -117,14 +120,17 @@ module.exports = {
 						if(logMsgs) console.log("[MainControlSocket] Hello ACK received");
 
 						if(logMsgs) console.log("[MainControlSocket] Sending heartbeat");
+						this.beforeHB = Date.now();
 						this.socket.send(JSON.stringify({op: 1, d: this.sequenceID}));
 
 						setInterval(function() {
 							if(logMsgs) console.log("[MainControlSocket] Sending heartbeat");
+							this.beforeHB = Date.now();
 							this.socket.send(JSON.stringify({op: 1, d: this.sequenceID}));
 						}.bind(this), payload.d.heartbeat_interval);
 					} else if(payload.op == 11) {
 						if(logMsgs) console.log("[MainControlSocket] Heartbeat ACK received");
+						this.latency = Date.now() - this.beforeHB;
 					} else if(payload.op == 0) {
 						this.sequenceID = payload.s;
 
@@ -164,6 +170,8 @@ module.exports = {
 							try {payload.d.author.self = payload.d.author.id == this.userID;} catch(e) {}
 
 							if(typeof this.statusUpdateFunction == "function") this.statusUpdateFunction(payload.d);
+						} else if(payload.t == "MESSAGE_DELETE") {
+							if(typeof this.onDeleteFunction == "function") this.onDeleteFunction(payload.d);
 						}
 					} else if(payload.op == 7) {
 						if(logMsgs) console.log("[MainControlSocket] Reconnect message received");
@@ -197,6 +205,10 @@ module.exports = {
 
 		onMessageEdit(editFunc) {
 			this.onEditFunction = editFunc;
+		}
+
+		onMessageDelete(deleteFunc) {
+			this.onDeleteFunction = deleteFunc;
 		}
 
 		onStatusUpdate(statusFunc) {
