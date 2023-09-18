@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.7.9
+ * @version 1.9.9
  */
 
 const https = require("https");
@@ -564,6 +564,64 @@ module.exports = {
 			});
 		}
 
+		createChannel(guildID, name, type, parentID = null) {
+			const channelData = JSON.stringify({name, type, parent_id: parentID});
+			const options = {
+				...module.exports.APIBaseOpt,
+				method: "POST",
+				path: `/api/v10/guilds/${guildID}/channels`,
+				headers: {
+					"Authorization": this.token,
+					"Content-Type": "application/json",
+					"Content-Length": channelData.length
+				}
+			};
+
+			return new Promise(function(resolve) {
+				const req = https.request(options, function(res) {
+					const chunks = [];
+
+					res.on("data", function(chunk) {
+						chunks.push(chunk);
+					}).on("end", function() {
+						resolve(JSON.parse(Buffer.concat(chunks)));
+					});
+				});
+
+				req.write(channelData);
+				req.end();
+			});
+		}
+
+		setChannelPermissions(channelID, userID, allow, deny) {
+			const permissionData = JSON.stringify({id: userID, allow, deny, type: 1});
+			const options = {
+				...module.exports.APIBaseOpt,
+				method: "PUT",
+				path: `/api/v10/channels/${channelID}/permissions/${userID}`,
+				headers: {
+					"Authorization": this.token,
+					"Content-Type": "application/json",
+					"Content-Length": permissionData.length
+				}
+			};
+
+			return new Promise(function(resolve) {
+				const req = https.request(options, function(res) {
+					const chunks = [];
+
+					res.on("data", function(chunk) {
+						chunks.push(chunk);
+					}).on("end", function() {
+						resolve(JSON.parse(Buffer.concat(chunks)));
+					});
+				});
+
+				req.write(permissionData);
+				req.end();
+			});
+		}
+
 		getMessages(channelID, limit) {
 			const options = {
 				...module.exports.APIBaseOpt,
@@ -900,7 +958,7 @@ module.exports = {
 			}.bind(this));
 		}
 
-		createChannel(userIDs) {
+		createGroupChat(userIDs) {
 			const userData = JSON.stringify({recipients: userIDs});
 			const options = {
 				...module.exports.APIBaseOpt,

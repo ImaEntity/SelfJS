@@ -1,4 +1,3 @@
-
 # Properties
 - **status**: The enum that holds the different status types.
 
@@ -40,6 +39,10 @@
 
   - **replyToMessage(channelID, messageID, message)**: Replies to a specified message.
 
+  - **createChannel(guildID, name, type, parentID = null)**: Creates a channel in a server based on the specified options.
+
+  - **setChannelPermissions(channelID, userID, allow, deny)**: Sets a users permissions in a channel based on the specified options.
+
   - **getMessages(channelID, limit)**: Gets messages from a channel with a limit.
 
   - **getUsers(guildID)**: Gets users from a guild.
@@ -72,7 +75,7 @@
 
   - **setStatus(status, activities, afk = false)**: Sets the status of the client.
 
-  - **createChannel(userIDs)**: Creates a new channel with the specified users.
+  - **createGroupChat(userIDs)**: Creates a new channel with the specified users.
 
   - **startTyping(channelID)**: Simulates the client typing in a channel.
 
