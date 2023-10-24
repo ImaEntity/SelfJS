@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.9.9
+ * @version 1.9.10
  */
 
 const https = require("https");
@@ -88,6 +88,7 @@ module.exports = {
 			this.messageDeleteFunction = null;
 			this.latency = null;
 			this.beforeHB = null;
+			this.hearbeatInterval = null;
 		}
 
 		login(token, isMobile = false, logMsgs = false) {
@@ -123,7 +124,7 @@ module.exports = {
 						this.beforeHB = Date.now();
 						this.socket.send(JSON.stringify({op: 1, d: this.sequenceID}));
 
-						setInterval(function() {
+						this.hearbeatInterval = setInterval(function() {
 							if(logMsgs) console.log("[MainControlSocket] Sending heartbeat");
 							this.beforeHB = Date.now();
 							this.socket.send(JSON.stringify({op: 1, d: this.sequenceID}));
@@ -175,6 +176,9 @@ module.exports = {
 						}
 					} else if(payload.op == 7) {
 						if(logMsgs) console.log("[MainControlSocket] Reconnect message received");
+
+						if(this.hearbeatInterval) clearInterval(this.hearbeatInterval);
+						this.socket.terminate();
 
 						this.socket = new ws("wss://gateway.discord.gg?v=10&encoding=json");
 
