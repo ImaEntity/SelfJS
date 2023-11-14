@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 1.9.10
+ * @version 2.9.10
  */
 
 const https = require("https");
@@ -36,12 +36,22 @@ module.exports = {
 		});
 	},
 
+	jsonEncode: function(jsonData) {
+		const str = JSON.stringify(jsonData);
+		
+		return str.replace(/[\u007F-\uFFFF]/g, function(chr) {
+			const code = chr.charCodeAt(0).toString(16);
+
+			return "\\u" + new Array(4 - code.length).fill('0').join("") + code;
+		});
+	},
+
 	sendWebhookMessage: function(webhookID, webhookToken, inputData) {
 		let options = null;
 		let msgData = null;
 
 		if(inputData) {
-			msgData = JSON.stringify(inputData);
+			msgData = module.exports.jsonEncode(inputData);
 			options = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -52,7 +62,7 @@ module.exports = {
 				}
 			};
 		} else {
-			msgData = JSON.stringify(webhookToken);
+			msgData = module.exports.jsonEncode(webhookToken);
 			options = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -101,7 +111,7 @@ module.exports = {
 				this.socket.on("open", function() {
 					if(logMsgs) console.log("[MainControlSocket] Sending hello");
 
-					this.socket.send(JSON.stringify({
+					this.socket.send(module.exports.jsonEncode({
 						op: 2,
 						d: {
 							token: this.token,
@@ -122,12 +132,12 @@ module.exports = {
 
 						if(logMsgs) console.log("[MainControlSocket] Sending heartbeat");
 						this.beforeHB = Date.now();
-						this.socket.send(JSON.stringify({op: 1, d: this.sequenceID}));
+						this.socket.send(module.exports.jsonEncode({op: 1, d: this.sequenceID}));
 
 						this.hearbeatInterval = setInterval(function() {
 							if(logMsgs) console.log("[MainControlSocket] Sending heartbeat");
 							this.beforeHB = Date.now();
-							this.socket.send(JSON.stringify({op: 1, d: this.sequenceID}));
+							this.socket.send(module.exports.jsonEncode({op: 1, d: this.sequenceID}));
 						}.bind(this), payload.d.heartbeat_interval);
 					} else if(payload.op == 11) {
 						if(logMsgs) console.log("[MainControlSocket] Heartbeat ACK received");
@@ -143,7 +153,7 @@ module.exports = {
 							if(logMsgs) console.log("[MainControlSocket] Ready message received");
 							resolve();
 						} else if(payload.t == "MESSAGE_CREATE") {
-							const ackData = JSON.stringify({token: null});
+							const ackData = module.exports.jsonEncode({token: null});
 							const options = {
 								...module.exports.APIBaseOpt,
 								method: "POST",
@@ -185,7 +195,7 @@ module.exports = {
 						this.socket.on("open", function() {
 							if(logMsgs) console.log("[MainControlSocket] Resume message sent");
 
-							this.socket.send(JSON.stringify({
+							this.socket.send(module.exports.jsonEncode({
 								op: 6,
 								d: {
 									token: this.token,
@@ -220,7 +230,7 @@ module.exports = {
 		}
 
 		getDMChannel(userID) {
-			const channelData = JSON.stringify({recipients: [userID]});
+			const channelData = module.exports.jsonEncode({recipients: [userID]});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -280,7 +290,7 @@ module.exports = {
 
 			fileName = fileName.split('/').pop();
 
-			const requestData = JSON.stringify({
+			const requestData = module.exports.jsonEncode({
 				files: [
 					{
 						filename: fileName,
@@ -358,7 +368,7 @@ module.exports = {
 							fileRes.on("data", function(chunk) {
 								fileChunks.push(chunk);
 							}).on("end", function() {
-								let finalData = JSON.stringify({
+								let finalData = module.exports.jsonEncode({
 									content: msgContent,
 									attachments: [
 										{
@@ -376,7 +386,7 @@ module.exports = {
 										message_id: messageID
 									};
 
-									finalData = JSON.stringify(finalData);
+									finalData = module.exports.jsonEncode(finalData);
 								}
 
 								const finalOptions = {
@@ -488,7 +498,7 @@ module.exports = {
 		}
 
 		setRolesForMemeber(serverID, userID, roleIDs) {
-			const roleData = JSON.stringify(roleIDs);
+			const roleData = module.exports.jsonEncode(roleIDs);
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "PATCH",
@@ -511,7 +521,7 @@ module.exports = {
 		}
 
 		sendMessage(channelID, message) {
-			const msgData = JSON.stringify({content: message});
+			const msgData = module.exports.jsonEncode({content: message});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -540,7 +550,7 @@ module.exports = {
 		}
 
 		replyToMessage(channelID, messageID, message) {
-			const msgData = JSON.stringify({content: message, message_reference: {channel_id: channelID, message_id: messageID}});
+			const msgData = module.exports.jsonEncode({content: message, message_reference: {channel_id: channelID, message_id: messageID}});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -569,7 +579,7 @@ module.exports = {
 		}
 
 		createChannel(guildID, name, type, parentID = null) {
-			const channelData = JSON.stringify({name, type, parent_id: parentID});
+			const channelData = module.exports.jsonEncode({name, type, parent_id: parentID});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -598,7 +608,7 @@ module.exports = {
 		}
 
 		setChannelPermissions(channelID, userID, allow, deny) {
-			const permissionData = JSON.stringify({id: userID, allow, deny, type: 1});
+			const permissionData = module.exports.jsonEncode({id: userID, allow, deny, type: 1});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "PUT",
@@ -715,7 +725,7 @@ module.exports = {
 		}
 
 		ring(channelID, userIDs) {
-			const ringData = JSON.stringify({recipients: userIDs});
+			const ringData = module.exports.jsonEncode({recipients: userIDs});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -738,7 +748,7 @@ module.exports = {
 		}
 
 		stopRinging(channelID, userIDs) {
-			const ringData = JSON.stringify({recipients: userIDs});
+			const ringData = module.exports.jsonEncode({recipients: userIDs});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -834,7 +844,7 @@ module.exports = {
 		}
 
 		editMessage(channelID, messageID, newMessage) {
-			const msgData = JSON.stringify({content: newMessage});
+			const msgData = module.exports.jsonEncode({content: newMessage});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "PATCH",
@@ -876,7 +886,7 @@ module.exports = {
 		}
 
 		renameChannel(channelID, channelName) {
-			const nameData = JSON.stringify({name: channelName});
+			const nameData = module.exports.jsonEncode({name: channelName});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "PATCH",
@@ -899,7 +909,7 @@ module.exports = {
 		}
 
 		block(userID) {
-			const blockData = JSON.stringify({type: 2});
+			const blockData = module.exports.jsonEncode({type: 2});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "PUT",
@@ -948,7 +958,7 @@ module.exports = {
 
 		setStatus(status, activities, afk = false) {
 			return new Promise(function (resolve) {
-				this.socket.send(JSON.stringify({
+				this.socket.send(module.exports.jsonEncode({
 					op: 3,
 					d: {
 						since: Date.now(),
@@ -963,7 +973,7 @@ module.exports = {
 		}
 
 		createGroupChat(userIDs) {
-			const userData = JSON.stringify({recipients: userIDs});
+			const userData = module.exports.jsonEncode({recipients: userIDs});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "POST",
@@ -1053,7 +1063,7 @@ module.exports = {
 		}
 
 		editNote(userID, note) {
-			const noteData = JSON.stringify({note});
+			const noteData = module.exports.jsonEncode({note});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "PUT",
@@ -1101,7 +1111,7 @@ module.exports = {
 		}
 
 		transferOwnership(channelID, userID) {
-			const ownershipData = JSON.stringify({owner: userID});
+			const ownershipData = module.exports.jsonEncode({owner: userID});
 			const options = {
 				...module.exports.APIBaseOpt,
 				method: "PATCH",

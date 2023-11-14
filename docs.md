@@ -6,6 +6,8 @@
 
 - **sendWebhookMessage(webhookID, webhookToken, inputData)**: A function to send a webhook message. The webhook token and ID are provided, along with any input data.
 
+- **jsonEncode(jsonObject)**: Encodes a JSON object for use with the discord API. (Self does this automatically.)
+
 # Class
 - **Client**: This class allows the interaction with the Discord server. The following are its methods:
 
