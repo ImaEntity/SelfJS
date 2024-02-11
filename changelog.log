@@ -14,3 +14,7 @@ V2.10.11
 
     Removed:
         The default option in the status enum
+
+V3.0.0
+    Changed:
+        Major overhaul to the structure of self.js

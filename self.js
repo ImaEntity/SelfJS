@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 2.10.11
+ * @version 3.0.0
  */
 
 const https = require("https");
@@ -264,57 +264,20 @@ module.exports = {
 		}
 
 		getDMChannel(userID) {
-			const channelData = module.exports.jsonEncode({recipients: [userID]});
-			const options = {
-				...module.exports.APIBaseOpt,
+			return await this.makeRequest({
 				method: "POST",
 				path: "/api/v10/users/@me/channels",
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": channelData.length
+				body: {
+					recipients: [userID]
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.write(channelData);
-				req.end();
 			});
 		}
 
-		getRoles(serverID, userID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async getRoles(serverID, userID) {
+			return (await this.makeRequest({
 				method: "GET",
-				path: `/api/v10/users/${userID}/profile?with_mutual_guilds=false&guild_id=${serverID}`,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)).guild_member.roles);
-					});
-				});
-
-				req.end();
-			});
+				path: `/api/v10/guilds/${serverID}/members/${userID}`,
+			})).guild_member.roles;
 		}
 
 		uploadFile(channelID, fileName, isSpoiled = false, msgContent = "", messageID = null) {
@@ -459,7 +422,7 @@ module.exports = {
 			}.bind(this));
 		}
 
-		search(channelID, options) {
+		async search(channelID, options) {
 			options = options || {};
 
 			const pinned = options.pinned ?? null;
@@ -482,75 +445,24 @@ module.exports = {
 			if(mentions != null) path += mentions.map((e) => `mentions=${e}`).join('&') + '&';
 			if(has != null) path += has.map((e) => `has=${e}`).join('&');
 
-			const requestOptions = {
-				...module.exports.APIBaseOpt,
+			return await this.makeRequest({
 				method: "GET",
-				path,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-			
-			return new Promise(function(resolve) {
-				const req = https.request(requestOptions, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.end();
+				path: path
 			});
 		}
 
-		getUserData(userID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async getUserData(userID) {
+			return await this.makeRequest({
 				method: "GET",
-				path: `/api/v10/users/${userID}/profile?with_mutual_guilds=false`,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.end();
+				path: `/api/v10/users/${userID}/profile?with_mutual_guilds=false`
 			});
 		}
 
-		setRolesForMemeber(serverID, userID, roleIDs) {
-			const roleData = module.exports.jsonEncode(roleIDs);
-			const options = {
-				...module.exports.APIBaseOpt,
+		async setRolesForMemeber(serverID, userID, roleIDs) {
+			return await this.makeRequest({
 				method: "PATCH",
 				path: `/api/v10/guilds/${serverID}/members/${userID}`,
-				headers: {
-					"Content-Type": "application/json",
-					"Content-Length": roleData.length,
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write(roleData);
-				req.end();
+				body: roleIDs
 			});
 		}
 
@@ -578,216 +490,84 @@ module.exports = {
 			});
 		}
 
-		createChannel(guildID, name, type, parentID = null) {
-			const channelData = module.exports.jsonEncode({name, type, parent_id: parentID});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async createChannel(guildID, name, type, parentID = null) {
+			return await this.makeRequest({
 				method: "POST",
 				path: `/api/v10/guilds/${guildID}/channels`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": channelData.length
+				body: {
+					name,
+					type,
+					parent_id: parentID
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.write(channelData);
-				req.end();
 			});
 		}
 
-		setChannelPermissions(channelID, userID, allow, deny) {
-			const permissionData = module.exports.jsonEncode({id: userID, allow, deny, type: 1});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async setChannelPermissions(channelID, userID, allow, deny) {
+			return await this.makeRequest({
 				method: "PUT",
 				path: `/api/v10/channels/${channelID}/permissions/${userID}`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": permissionData.length
+				body: {
+					id: userID,
+					allow,
+					deny,
+					type: 1
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.write(permissionData);
-				req.end();
 			});
 		}
 
-		getMessages(channelID, limit) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async getMessages(channelID, limit) {
+			return await this.makeRequest({
 				method: "GET",
-				path: `/api/v10/channels/${channelID}/messages?limit=${limit}`,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.end();
+				path: `/api/v10/channels/${channelID}/messages?limit=${limit}`
 			});
 		}
 
-		getUsers(guildID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async getUsers(guildID) {
+			return await this.makeRequest({
 				method: "GET",
-				path: `/api/v10/guilds/${guildID}/members`,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.end();
+				path: `/api/v10/guilds/${guildID}/members`
 			});
 		}
 
-		removeFromChannel(channelID, userID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async removeFromChannel(channelID, userID) {
+			return await this.makeRequest({
 				method: "DELETE",
-				path: `/api/v10/channels/${channelID}/recipients/${userID}`,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.end();
+				path: `/api/v10/channels/${channelID}/recipients/${userID}`
 			});
 		}
 
-		leaveChannel(channelID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async leaveChannel(channelID) {
+			return await this.makeRequest({
 				method: "DELETE",
-				path: `/api/v10/channels/${channelID}`,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-				
-				req.end();
-			}.bind(this));
+				path: `/api/v10/channels/${channelID}`
+			});
 		}
 
-		ring(channelID, userIDs) {
-			const ringData = module.exports.jsonEncode({recipients: userIDs});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async ring(channelID, userIDs) {
+			return await this.makeRequest({
 				method: "POST",
 				path: `/api/v10/channels/${channelID}/call/ring`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": ringData.length
+				body: {
+					recipients: userIDs
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write(ringData);
-				req.end();
 			});
 		}
 
-		stopRinging(channelID, userIDs) {
-			const ringData = module.exports.jsonEncode({recipients: userIDs});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async stopRinging(channelID, userIDs) {
+			return await this.makeRequest({
 				method: "POST",
 				path: `/api/v10/channels/${channelID}/call/stop-ringing`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": ringData.length
+				body: {
+					recipients: userIDs
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write(ringData);
-				req.end();
 			});
 		}
 
-		addToChannel(channelID, userID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async addToChannel(channelID, userID) {
+			return await this.makeRequest({
 				method: "PUT",
 				path: `/api/v10/channels/${channelID}/recipients/${userID}`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Length": 0
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write("");
-				req.end();
+				body: "junkValue"
 			});
 		}
 
@@ -801,133 +581,54 @@ module.exports = {
 				return null;
 			}
 
-			const options = {
-				...module.exports.CDNBaseOpt,
+			return await this.makeRequest({
 				method: "GET",
 				path: `/avatars/${userID}/${avatarID}.webp?size=${size}`
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(Buffer.concat(chunks));
-					});
-				});
-
-				req.end();
-			});
+			}, module.exports.CDNBaseOpt);
 		}
 
-		addFriend(userID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async addFriend(userID) {
+			return await this.makeRequest({
 				method: "PUT",
 				path: `/api/v10/users/@me/relationships/${userID}`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Length": 0
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write("");
-				req.end();
+				body: "junkValue"
 			});
 		}
 
-		editMessage(channelID, messageID, newMessage) {
-			const msgData = module.exports.jsonEncode({content: newMessage});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async editMessage(channelID, messageID, newMessage) {
+			return await this.makeRequest({
 				method: "PATCH",
 				path: `/api/v10/channels/${channelID}/messages/${messageID}`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": msgData.length
+				body: {
+					content: newMessage
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write(msgData);
-				req.end();
 			});
 		}
 
-		removeFriend(userID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async removeFriend(userID) {
+			return await this.makeRequest({
 				method: "DELETE",
-				path: `/api/v10/users/@me/relationships/${userID}`,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.end();
+				path: `/api/v10/users/@me/relationships/${userID}`
 			});
 		}
 
-		renameChannel(channelID, channelName) {
-			const nameData = module.exports.jsonEncode({name: channelName});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async renameChannel(channelID, channelName) {
+			return await this.makeRequest({
 				method: "PATCH",
 				path: `/api/v10/channels/${channelID}`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": nameData.length
+				body: {
+					name: channelName
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write(nameData);
-				req.end();
 			});
 		}
 
-		block(userID) {
-			const blockData = module.exports.jsonEncode({type: 2});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async block(userID) {
+			return await this.makeRequest({
 				method: "PUT",
 				path: `/api/v10/users/@me/relationships/${userID}`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": blockData.length
+				body: {
+					type: 2
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write(blockData);
-				req.end();
 			});
 		}
 
@@ -937,22 +638,10 @@ module.exports = {
 			}.bind(this));
 		}
 
-		deleteMessage(channelID, messageID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async deleteMessage(channelID, messageID) {
+			return await this.makeRequest({
 				method: "DELETE",
-				path: `/api/v10/channels/${channelID}/messages/${messageID}`,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.end();
+				path: `/api/v10/channels/${channelID}/messages/${messageID}`
 			});
 		}
 
@@ -972,164 +661,63 @@ module.exports = {
 			}.bind(this));
 		}
 
-		createGroupChat(userIDs) {
-			const userData = module.exports.jsonEncode({recipients: userIDs});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async createGroupChat(userIDs) {
+			return await this.makeRequest({
 				method: "POST",
 				path: `/api/v10/users/@me/channels`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": userData.length
+				body: {
+					recipients: userIDs
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.write(userData);
-				req.end();
 			});
 		}
 
-		startTyping(channelID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async startTyping(channelID) {
+			return await this.makeRequest({
 				method: "POST",
 				path: `/api/v10/channels/${channelID}/typing`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Length": 0
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write("");
-				req.end();
+				body: "junkValue"
 			});
 		}
 
-		pinMessage(channelID, messageID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async pinMessage(channelID, messageID) {
+			return await this.makeRequest({
 				method: "PUT",
 				path: `/api/v10/channels/${channelID}/pins/${messageID}`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Length": 0
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write("");
-				req.end();
+				body: "junkValue"
 			});
 		}
 
-		unpinMessage(channelID, messageID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async unpinMessage(channelID, messageID) {
+			return await this.makeRequest({
 				method: "DELETE",
-				path: `/api/v10/channels/${channelID}/pins/${messageID}`,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.end();
+				path: `/api/v10/channels/${channelID}/pins/${messageID}`
 			});
 		}
 
-		editNote(userID, note) {
-			const noteData = module.exports.jsonEncode({note});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async editNote(userID, note) {
+			return await this.makeRequest({
 				method: "PUT",
 				path: `/api/v10/users/@me/notes/${userID}`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": noteData.length
+				body: {
+					note
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write(noteData);
-				req.end();
 			});
 		}
 
-		getChannelData(channelID) {
-			const options = {
-				...module.exports.APIBaseOpt,
+		async getChannelData(channelID) {
+			return await this.makeRequest({
 				method: "GET",
-				path: `/api/v10/channels/${channelID}`,
-				headers: {
-					"Authorization": this.token
-				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					let chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.end();
+				path: `/api/v10/channels/${channelID}`
 			});
 		}
 
-		transferOwnership(channelID, userID) {
-			const ownershipData = module.exports.jsonEncode({owner: userID});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async transferOwnership(channelID, userID) {
+			return await this.makeRequest({
 				method: "PATCH",
 				path: `/api/v10/channels/${channelID}`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": ownershipData.length
+				body: {
+					owner: userID
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					res.on("end", resolve);
-				});
-
-				req.write(ownershipData);
-				req.end();
 			});
 		}
 	}
