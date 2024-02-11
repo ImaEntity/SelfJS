@@ -263,7 +263,7 @@ module.exports = {
 			this.statusUpdateFunction = statusFunc;
 		}
 
-		getDMChannel(userID) {
+		async getDMChannel(userID) {
 			return await this.makeRequest({
 				method: "POST",
 				path: "/api/v10/users/@me/channels",
