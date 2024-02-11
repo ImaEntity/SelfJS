@@ -1,7 +1,11 @@
 # SelfJS
-Install: `npm i @imaentity/selfjs`
+Install Command: `npm i @imaentity/selfjs`
 
-An example of an echo bot:
+## Documentation
+View Documentation [**Here**](https://github.com/ImaEntity/SelfJS/blob/master/docs.md)
+
+## Bot Example's
+Echo Bot:
 ```JS
 const discord = require("@imaentity/SelfJS");
 const client = new discord.Client();
