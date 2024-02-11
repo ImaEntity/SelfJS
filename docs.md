@@ -10,7 +10,6 @@ Welcome To SelfJS Documentation
 
   **Types:**
   ```
-  Default   : -1
   Playing   : 0
   Streaming : 1
   Listening : 2
@@ -37,7 +36,7 @@ Welcome To SelfJS Documentation
   
   <br>Example:
   ```javascript 
-  discord.sleep(1)
+  self.sleep(1000);
   ```
 + ### 🤖 Send Webhook Message:
   A function to send a webhook message. The webhook token and ID are provided, along with any input data.
@@ -45,24 +44,24 @@ Welcome To SelfJS Documentation
 
   <br>Example:
   ```javascript
-  discord.sendWebhookMessage("01234567891011121314", "012345678910111213141516.123456.123456789101112131415161718", {
-        "content": "Sending Content Throught Webhook"
-    })
+  self.sendWebhookMessage("012345678910111213", "012345678910111213141516.123456.123456789101112131415161718", {
+    "content": "Sending Content Through Webhook"
+  });
   ```
   or
-    ```javascript
-  discord.sendWebhookMessage("https://discord.com/api/webhooks/01234567891011121314/012345678910111213141516.123456.123456789101112131415161718", {
-        "content": "Sending Content Throught Webhook"
-    })
+  ```javascript
+  self.sendWebhookMessage("https://discord.com/api/webhooks/01234567891011121314/012345678910111213141516.123456.123456789101112131415161718", {
+    "content": "Sending Content Throught Webhook"
+  });
   ```
 
 + ### 📄 JSON Encode
   Encodes a JSON object for use with the discord API. (Self does this automatically.)
-  >Paramaters: jsonObject (Any)
+  >Paramaters: jsonObject (JSON)
 
   <br>Example:
   ```javascript
-  discord.jsonEncode("Content")
+  self.jsonEncode({content: "Hello, world!"});
   ```
 
 ## Class
@@ -71,8 +70,8 @@ Welcome To SelfJS Documentation
 
   <br>Example:
   ```javascript
-  const discord = require("@imaentity/selfjs");
-  const client = new discord.Client();
+  const self = require("@imaentity/selfjs");
+  const client = new self.Client();
   ```
 
   + ### 🧑 UserID: The client's user ID.
@@ -87,7 +86,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.login("012345678910111213141516.123456.123456789101112131415161718")
+    client.login("012345678910111213141516.123456.123456789101112131415161718");
     ```
 
   + ### 💬 onMessage
@@ -97,7 +96,7 @@ Welcome To SelfJS Documentation
     <br>Example:
     ```javascript
     client.onMessage(async function(msg) {
-      console.log("Message Received: " + msg.content)
+      console.log("Message Received: " + msg.content);
     });
     ```
 
@@ -108,18 +107,19 @@ Welcome To SelfJS Documentation
     <br>Example:
     ```javascript
     client.onMessageEdit(async function(msg) {
-      console.log("Message Edited: " + msg.content)
+      console.log("Message Edited: " + msg.content);
     });
     ```
 
   + ### 🚮 onMessageDelete
     Function to be executed when a message is deleted.
+    Deleted message objects only receive the channel and message ids.
     >Paramaters: deleteFunc (Function)
 
     <br>Example:
     ```javascript
     client.onMessageDelete(async function(msg) {
-      console.log("Message Deleted: " + msg.content)
+      console.log("Message Deleted: " + msg.id);
     });
     ```
 
@@ -130,7 +130,7 @@ Welcome To SelfJS Documentation
     <br>Example:
     ```javascript
     client.onStatusUpdate(async function(status) {
-      console.log(status)
+      console.log(status);
     });
     ```
   
@@ -140,7 +140,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.getDMChannel("01234567891011121314")
+    client.getDMChannel("01234567891011121314");
     ```
 
   + ### 🧪 getRoles
@@ -149,7 +149,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.getRoles("01234567891011121314", "41312111019876543210")
+    client.getRoles("01234567891011121314", "41312111019876543210");
     ```
 
   + ### 📁 uploadFile
@@ -158,7 +158,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.uploadFile("01234567891011121314", "image.png", true, "Message Related to The Image", "41312111019876543210")
+    client.uploadFile("01234567891011121314", "image.png", true, "Message Related to The Image", "41312111019876543210");
     ```
   
   + ### 🔍 search
@@ -168,8 +168,8 @@ Welcome To SelfJS Documentation
     <br>Example:
     ```javascript
     client.search("01234567891011121314", {
-      "content": "Text"
-    })
+      content: "Hello, world!"
+    });
     ```
 
   + ### 👤 getUserData
@@ -178,12 +178,12 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.getUserData("01234567891011121314")
+    client.getUserData("01234567891011121314");
     ```
   
   + ### 🔨 setRolesForMember
     Sets roles for a member in a server.
-    >Paramaters: serverID (String), userID (String), roleIDs (String or JSON)
+    >Paramaters: serverID (String), userID (String), roleIDs (Array)
 
     <br>Example:
     ```javascript
@@ -191,25 +191,25 @@ Welcome To SelfJS Documentation
       "1285712985712985712",
       "1284578912561872568",
       "9127498127459812749"
-    ])
+    ]);
     ```
 
   + ### 🗣 sendMessage
     Sends a message to a specified channel.
-    >Paramaters: channelID (String), message (Any)
+    >Paramaters: channelID (String), message (String)
 
     <br>Example:
     ```javascript
-    client.sendMessage("01234567891011121314", "Message")
+    client.sendMessage("01234567891011121314", "Message");
     ```
   
   + ### 👨🏻‍🤝‍👨🏻 replyToMessage
     Replies to a specified message.
-    >Paramaters: channelID (String), messageID (String), message (Any)
+    >Paramaters: channelID (String), messageID (String), message (String)
 
     <br>Example:
     ```javascript
-    client.replyToMessage("01234567891011121314", "41312111019876543210", "Replied Message")
+    client.replyToMessage("01234567891011121314", "41312111019876543210", "Replied Message");
     ```
 
   + ### 📔 createChannel
@@ -220,7 +220,7 @@ Welcome To SelfJS Documentation
     ```javascript
     // 0 = GUILD_TEXT
 
-    client.createChannel("01234567891011121314", "new-channel", 0, "41312111019876543210")
+    client.createChannel("01234567891011121314", "new-channel", 0, "41312111019876543210");
     ```
 
   + ### 👑 setChannelPermissons
@@ -229,16 +229,16 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.setChannelPermissons("01234567891011121314", "41312111019876543210")
+    client.setChannelPermissons("01234567891011121314", "41312111019876543210");
     ```
 
   + ### 📖 getMessages
     Gets messages from a channel with a limit.
-    >Paramaters: channelID (String), limit (String or Int)
+    >Paramaters: channelID (String), limit (Int)
 
     <br>Example:
     ```javascript
-    client.getMessages("01234567891011121314", "10")
+    client.getMessages("01234567891011121314", 10);
     ```
 
   + ### 🏙 getUsers
@@ -247,7 +247,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.getUsers("01234567891011121314")
+    client.getUsers("01234567891011121314");
     ```
 
   + ### ❌ removeFromChannel
@@ -256,7 +256,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.removeFromChannel("01234567891011121314", "41312111019876543210")
+    client.removeFromChannel("01234567891011121314", "41312111019876543210");
     ```
 
   + ### 🏃‍♀️ leaveChannel
@@ -265,31 +265,31 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.leaveChannel("01234567891011121314")
+    client.leaveChannel("01234567891011121314");
     ```
   
   + ### 📞 ring
     Starts a call with the specified users in a channel.
-    >Paramaters: channelID (String), userIDs (String or JSON)
+    >Paramaters: channelID (String), userIDs (Array)
 
     <br>Example:
     ```javascript
-    client.ring("01234567891011121314", {
+    client.ring("01234567891011121314", [
       "12549812509818205",
       "19024578912857987"
-    })
+    ]);
     ```
 
   + ### 📴 stopRinging
     Stops ringing the specified users in a channel.
-    >Paramaters: channelID (String), userIDs (String or JSON)
+    >Paramaters: channelID (String), userIDs (Array)
 
     <br>Example:
     ```javascript
-    client.stopRinging("01234567891011121314", {
+    client.stopRinging("01234567891011121314", [
       "12549812509818205",
       "19024578912857987"
-    })
+    ]);
     ```
 
   + ### ➕ addToChannel
@@ -298,7 +298,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.addToChannel("01234567891011121314", "41312111019876543210")
+    client.addToChannel("01234567891011121314", "41312111019876543210");
     ```
 
   + ### 📷 getAvatar
@@ -307,7 +307,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.getAvatar("01234567891011121314")
+    client.getAvatar("01234567891011121314");
     ```
   
   + ### 🤼 addFriend
@@ -316,16 +316,16 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.addFriend("01234567891011121314")
+    client.addFriend("01234567891011121314");
     ```
 
   + ### 🖊 editMessage
     Edits a message.
-    >Paramaters: channelID (String), messageID (String), message (Any)
+    >Paramaters: channelID (String), messageID (String), message (String)
 
     <br>Example:
     ```javascript
-    client.editMessage("01234567891011121314", "41312111019876543210", "Edited Message")
+    client.editMessage("01234567891011121314", "41312111019876543210", "Edited Message");
     ```
 
   + ### 👋 removeFriend
@@ -334,7 +334,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.removeFriend("01234567891011121314")
+    client.removeFriend("01234567891011121314");
     ```
 
   + ### 📛 renameChannel
@@ -343,7 +343,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.renameChannel("01234567891011121314", "Renamed Channel")
+    client.renameChannel("01234567891011121314", "Renamed Channel");
     ```
 
   + ### ❎ block
@@ -352,7 +352,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.block("01234567891011121314")
+    client.block("01234567891011121314");
     ```
 
   + ### ✅ unblock
@@ -361,7 +361,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.unblock("01234567891011121314")
+    client.unblock("01234567891011121314");
     ```
 
   + ### 🚮 deleteMessage
@@ -370,24 +370,24 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.deleteMessage("01234567891011121314", "41312111019876543210")
+    client.deleteMessage("01234567891011121314", "41312111019876543210");
     ```
 
   + ### 🗿 setStatus
     Sets the status of the client.
-    >Paramaters: status (String), activites (JSON), afk (Boolean | false)
+    >Paramaters: status (String), activites (Array), afk (Boolean | false)
 
     <br>Example:
     ```javascript
     client.setStatus("dnd", [{
-        name: "Streaming",
-        type: 1
-    }])
+        name: "with the discord API",
+        type: self.status.PLAYING
+    }]);
     ```
 
   + ### 🤼 createGroupChat
     Creates a new channel with the specified users.
-    >Paramaters: userIDs (String or JSON)
+    >Paramaters: userIDs (Array)
 
     <br>Example:
     ```javascript
@@ -395,7 +395,7 @@ Welcome To SelfJS Documentation
       "12847128957125",
       "12905901285798",
       "64837698943868"
-    ])
+    ]);
     ```
 
   + ### 🎹 startTyping
@@ -404,7 +404,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.startTyping("01234567891011121314")
+    client.startTyping("01234567891011121314");
     ```
 
   + ### 📌 pinMessage
@@ -413,7 +413,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.pinMessage("01234567891011121314", "41312111019876543210")
+    client.pinMessage("01234567891011121314", "41312111019876543210");
     ```
 
   + ### ❌ unpinMessage
@@ -422,7 +422,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.unpinMessage("01234567891011121314", "41312111019876543210")
+    client.unpinMessage("01234567891011121314", "41312111019876543210");
     ```
 
   + ### 📝 editNote
@@ -431,7 +431,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.editNote("01234567891011121314", "Edited Note")
+    client.editNote("01234567891011121314", "Edited Note");
     ```
 
   + ### 💾 getChannelData
@@ -440,7 +440,7 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.getChannelData("01234567891011121314")
+    client.getChannelData("01234567891011121314");
     ```
   
   + ### 👑 transferOwnership
@@ -449,5 +449,5 @@ Welcome To SelfJS Documentation
 
     <br>Example:
     ```javascript
-    client.transferOwnership("01234567891011121314", "41312111019876543210")
+    client.transferOwnership("01234567891011121314", "41312111019876543210");
     ```

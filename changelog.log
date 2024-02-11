@@ -6,5 +6,16 @@ V2.9.12
 V2.9.11
     Added:
         changelog.log
+        
     Changed:
         Client.setStatus now has default params
+
+V2.10.11
+    Added:
+        Docs link to README.md
+
+    Changed:
+        Structure of docs.md
+
+    Removed:
+        The default option in the status enum

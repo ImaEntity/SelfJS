@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 2.9.12
+ * @version 2.10.11
  */
 
 const https = require("https");
@@ -21,7 +21,6 @@ module.exports = {
 	},
 
 	status: {
-		DEFAULT: -1,
 		PLAYING: 0,
 		STREAMING: 1,
 		LISTENING: 2,
@@ -211,6 +210,41 @@ module.exports = {
 
 				this.socket.on("message", socketMessageFunction);
 			}.bind(this));
+		}
+
+		makeRequest(options = {}, base = module.exports.APIBaseOpt) {
+			const path    = options.path    || '/';
+			const method  = options.method  || "GET";
+			const headers = options.headers || {};
+			const body    = options.body    || undefined;
+		
+			const strBody = module.exports.jsonEncode(body) ?? "";
+
+			headers["Authorization"] = this.token;
+			headers["Content-Type"] = "application/json";
+			headers["Content-Length"] = strBody.length;
+
+			const reqOptions = {
+				...base,
+				path,
+				method,
+				headers
+			};
+
+			return new Promise(function(resolve) {
+				const req = https.request(reqOptions, function(res) {
+					const chunks = [];
+
+					res.on("data", function(chunk) {
+						chunks.push(chunk);
+					}).on("end", function() {
+						resolve(JSON.parse(Buffer.concat(chunks)));
+					});
+				});
+
+				if(strBody) req.write(strBody);
+				req.end();
+			});
 		}
 
 		onMessage(msgFunc) {
@@ -520,61 +554,27 @@ module.exports = {
 			});
 		}
 
-		sendMessage(channelID, message) {
-			const msgData = module.exports.jsonEncode({content: message});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async sendMessage(channelID, message) {
+			return await this.makeRequest({
 				method: "POST",
 				path: `/api/v10/channels/${channelID}/messages`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": msgData.length
+				body: {
+					content: message
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.write(msgData);
-				req.end();
 			});
 		}
 
-		replyToMessage(channelID, messageID, message) {
-			const msgData = module.exports.jsonEncode({content: message, message_reference: {channel_id: channelID, message_id: messageID}});
-			const options = {
-				...module.exports.APIBaseOpt,
+		async replyToMessage(channelID, messageID, message) {
+			return await this.makeRequest({
 				method: "POST",
 				path: `/api/v10/channels/${channelID}/messages`,
-				headers: {
-					"Authorization": this.token,
-					"Content-Type": "application/json",
-					"Content-Length": msgData.length
+				body: {
+					content: message,
+					message_reference: {
+						channel_id: channelID,
+						message_id: messageID
+					}
 				}
-			};
-
-			return new Promise(function(resolve) {
-				const req = https.request(options, function(res) {
-					const chunks = [];
-
-					res.on("data", function(chunk) {
-						chunks.push(chunk);
-					}).on("end", function() {
-						resolve(JSON.parse(Buffer.concat(chunks)));
-					});
-				});
-
-				req.write(msgData);
-				req.end();
 			});
 		}
 
