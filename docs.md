@@ -51,7 +51,7 @@ Welcome To SelfJS Documentation
   or
   ```javascript
   self.sendWebhookMessage("https://discord.com/api/webhooks/01234567891011121314/012345678910111213141516.123456.123456789101112131415161718", {
-    "content": "Sending Content Throught Webhook"
+    "content": "Sending Content Through Webhook"
   });
   ```
 
