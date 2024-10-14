@@ -172,6 +172,15 @@ Welcome To SelfJS Documentation
     });
     ```
 
+  + ### 👤 getUserProfile
+    Gets the profile of a user.
+    >Paramaters: userID (String)
+
+    <br>Example:
+    ```javascript
+    client.getUserProfile("01234567891011121314");
+    ```
+
   + ### 👤 getUserData
     Gets the data of a user.
     >Paramaters: userID (String)
@@ -317,6 +326,15 @@ Welcome To SelfJS Documentation
     <br>Example:
     ```javascript
     client.addFriend("01234567891011121314");
+    ```
+
+  + ### ➕ createServer
+    Creates a server with the given options.
+    >Paramaters: options ({name: String, icon: String | null})
+
+    <br>Example:
+    ```javascript
+    client.createServer({name: "My Server", icon: "data:image/png;base64,aGloaSA6Mw=="});
     ```
 
   + ### 🖊 editMessage

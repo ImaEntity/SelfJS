@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 3.0.0
+ * @version 3.1.0
  */
 
 const https = require("https");
@@ -46,36 +46,67 @@ module.exports = {
 	},
 
 	sendWebhookMessage: function(webhookID, webhookToken, inputData) {
-		let options = null;
-		let msgData = null;
+		const boundary = "X-SELFJS-BOUNDARY";
 
-		if(inputData) {
-			msgData = module.exports.jsonEncode(inputData);
-			options = {
-				...module.exports.APIBaseOpt,
-				method: "POST",
-				path: `/api/webhooks/${webhookID}/${webhookToken}`,
-				headers: {
-					"Content-Type": "application/json",
-					"Content-Length": msgData.length
-				}
-			};
-		} else {
-			msgData = module.exports.jsonEncode(webhookToken);
-			options = {
-				...module.exports.APIBaseOpt,
-				method: "POST",
-				path: webhookID.split("//")[1].split('/').slice(1).join('/'),
-				headers: {
-					"Content-Type": "application/json",
-					"Content-Length": msgData.length
-				}
-			};
+		let contentType = "application/json";
+		if(inputData.attachments && inputData.attachments.length > 0)
+			contentType = `multipart/form-data; boundary=${boundary}`; 
+
+		const webID  = inputData ? webhookID    : webhookID.split("//")[1].split('/')[3];
+		const webTok = inputData ? webhookToken : webhookID.split("//")[1].split('/')[4];
+		const inData = inputData ? inputData    : webhookToken;
+
+		let msgData = Buffer.from(module.exports.jsonEncode(inData));
+
+		if(inputData.attachments && inputData.attachments.length > 0) {
+			let msgFiles = [...inData.files];
+
+			delete inData.files;
+			msgData = Buffer.from(module.exports.jsonEncode(inData));
+
+			msgData = Buffer.concat([Buffer.from("Content-Type: application/json\r\n\r\n"), msgData]);
+			msgData = Buffer.concat([Buffer.from('Content-Disposition: form-data; name="payload_json"\r\n'), msgData]);
+			msgData = Buffer.concat([Buffer.from(`--${boundary}\r\n`), msgData]);
+			msgData = Buffer.concat([msgData, Buffer.from("\r\n")]);
+
+			for(const i in inData.attachments) {
+				const attach = inData.attachments[i];
+
+				msgData = Buffer.concat([msgData, Buffer.from(`--${boundary}\r\n`)]);
+				msgData = Buffer.concat([msgData, Buffer.from(`Content-Disposition: form-data; name="files[${i}]"; filename="${attach.filename}"\r\n`)]);
+				msgData = Buffer.concat([msgData, Buffer.from(`Content-Type: ${attach.content_type}\r\n\r\n`)]);
+				msgData = Buffer.concat([msgData, fs.existsSync(msgFiles[i]) ? fs.readFileSync(msgFiles[i], "") : Buffer.from("")]);
+				msgData = Buffer.concat([msgData, Buffer.from("\r\n")]);
+			}
+
+			msgData = Buffer.concat([msgData, Buffer.from(`--${boundary}--`)]);
 		}
+
+		const options = {
+			...module.exports.APIBaseOpt,
+			method: "POST",
+			path: `/api/webhooks/${webID}/${webTok}`,
+			headers: {
+				"Content-Type": contentType,
+				"Content-Length": Buffer.byteLength(msgData)
+			}
+		};
 
 		return new Promise(function(resolve) {
 			const req = https.request(options, function(res) {
-				res.on("end", resolve);
+				const chunks = [];
+
+				res.on("data", function(chunk) {
+					chunks.push(chunk);
+				}).on("end", function() {
+					const data = Buffer.concat(chunks);
+
+					try {
+						resolve(JSON.parse(data));
+					} catch(e) {
+						resolve({});
+					}
+				});
 			});
 
 			req.write(msgData);
@@ -451,10 +482,17 @@ module.exports = {
 			});
 		}
 
-		async getUserData(userID) {
+		async getUserProfile(userID) {
 			return await this.makeRequest({
 				method: "GET",
 				path: `/api/v10/users/${userID}/profile?with_mutual_guilds=false`
+			});
+		}
+
+		async getUserData(userID) {
+			return await this.makeRequest({
+				method: "GET",
+				path: `/api/v10/users/${userID}`
 			});
 		}
 
@@ -576,14 +614,14 @@ module.exports = {
 
 			try {
 				avatarID = await this.getUserData(userID);
-				avatarID = avatarID.user.avatar;
+				avatarID = avatarID.avatar;
 			} catch(e) {
 				return null;
 			}
 
 			return await this.makeRequest({
 				method: "GET",
-				path: `/avatars/${userID}/${avatarID}.webp?size=${size}`
+				path: `/avatars/${userID}/${avatarID}.png?size=${size}`
 			}, module.exports.CDNBaseOpt);
 		}
 
@@ -592,6 +630,25 @@ module.exports = {
 				method: "PUT",
 				path: `/api/v10/users/@me/relationships/${userID}`,
 				body: "junkValue"
+			});
+		}
+
+		async createServer(options) {
+			options = options || {};
+
+			const name = options.name ?? "Server";
+			const icon = options.icon ?? null;
+
+			return await this.makeRequest({
+				method: "POST",
+				path: "/api/v10/guilds",
+				body: {
+					channels: [],
+					guild_template_code: null,
+					system_channel_id: null,
+					name,
+					icon,
+				}
 			});
 		}
 

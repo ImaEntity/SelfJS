@@ -17,4 +17,13 @@ V2.10.11
 
 V3.0.0
     Changed:
-        Major overhaul to the structure of self.js
+        Overhaul to the structure of self.js
+
+V3.1.0
+    Added:
+        Webhooks can now send files
+        Client.getUserProfile to fetch user profiles
+        Client.createServer to create a server
+    
+    Changed:
+        Client.getUser now gets the actual user instead of their profile
