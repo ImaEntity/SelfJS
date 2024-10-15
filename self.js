@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Эмберс
- * @version 3.1.0
+ * @version 3.2.0
  */
 
 const https = require("https");
@@ -774,6 +774,16 @@ module.exports = {
 				path: `/api/v10/channels/${channelID}`,
 				body: {
 					owner: userID
+				}
+			});
+		}
+
+		async refreshURL(url) {
+			return await this.makeRequest({
+				method: "POST",
+				path: "/api/v10/attachments/refresh-urls",
+				body: {
+					attachment_urls: [url]
 				}
 			});
 		}

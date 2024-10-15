@@ -469,3 +469,12 @@ Welcome To SelfJS Documentation
     ```javascript
     client.transferOwnership("01234567891011121314", "41312111019876543210");
     ```
+  
+  + ### 🔁 refreshURL
+    Refreshes an expired attachment url.
+    >Paramaters: url (String)
+
+    <br>Example:
+    ```javascript
+    client.refreshURL();
+    ```
