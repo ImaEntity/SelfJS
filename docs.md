@@ -223,11 +223,11 @@ const client = new self.Client({
 });
 ```
 
-| Option       | Type      | Default       | Description                   |
-| ------------ | --------- | ------------- | ----------------------------- |
-| `properties` | `Object`  | `LOGIN_PROPS` | Gateway identify properties.  |
-| `debugLogs`  | `Boolean` | `true`        | Enables SelfJS debug logging. |
-| `intents`    | `Number`  | `null`        | Gateway intents.              |
+| Option       | Type      | Default       | Description                             |
+| ------------ | --------- | ------------- | --------------------------------------- |
+| `properties` | `Object`  | `LOGIN_PROPS` | Gateway identify properties.            |
+| `debugLogs`  | `Boolean` | `true`        | Enables SelfJS debug logging.           |
+| `intents`    | `Number`  | `null`        | Gateway intents, used for bot accounts. |
 
 ---
 
