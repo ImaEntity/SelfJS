@@ -1,480 +1,848 @@
-# 📜 Documentation
-Welcome To SelfJS Documentation
+# SelfJS Documentation
+Welcome To SelfJS Documentation  
 
-> [!WARNING]
-> Doc's might not be Up-to-Date or 100% Correct.
+> [!WARNING]  
+> These docs might not be up to date or 100% correct, Self is always being added to.  
+> If a descrepancy is found perfer the JSdoc included with the self.js file
 
-## Properties
-+ ### ℹ Activites Status:
-  The enum that holds the different status types.
+## Installation
 
-  **Types:**
-  ```
-  Playing   : 0
-  Streaming : 1
-  Listening : 2
-  Watching  : 3
-  Custom    : 4
-  Competing : 5
-  ```
+```bash
+npm install @imaentity/selfjs
+```
 
-+ ### 🎮 Status:
-  The string that holds the different status types.
+## Import
 
-  **Types:**
-  ```
-  "online",
-  "dnd",
-  "idle",
-  "invisible" 
-  ```
+```javascript
+const self = require("@imaentity/selfjs");
+```
 
-## Functions
-+ ### 😴 Sleep:
-  A promise-based sleep function that pauses execution for the given time in milliseconds.
-  > Paramaters:  Miliseconds (Int) 
-  
-  <br>Example:
-  ```javascript 
-  self.sleep(1000);
-  ```
-+ ### 🤖 Send Webhook Message:
-  A function to send a webhook message. The webhook token and ID are provided, along with any input data.
-  >Paramaters: webhookID (String), webhookToken (String or JSON), inputData (JSON)
+---
 
-  <br>Example:
-  ```javascript
-  self.sendWebhookMessage("012345678910111213", "012345678910111213141516.123456.123456789101112131415161718", {
-    "content": "Sending Content Through Webhook"
-  });
-  ```
-  or
-  ```javascript
-  self.sendWebhookMessage("https://discord.com/api/webhooks/01234567891011121314/012345678910111213141516.123456.123456789101112131415161718", {
-    "content": "Sending Content Through Webhook"
-  });
-  ```
+# Constants
 
-+ ### 📄 JSON Encode
-  Encodes a JSON object for use with the discord API. (Self does this automatically.)
-  >Paramaters: jsonObject (JSON)
+## `Status`
 
-  <br>Example:
-  ```javascript
-  self.jsonEncode({content: "Hello, world!"});
-  ```
+Contains the activity types used by Discord.
 
-## Class
-+ ### Client
-  This class allows the interaction with the Discord server.
+```javascript
+Status.PLAYING        // 0
+Status.STREAMING      // 1
+Status.LISTENING      // 2
+Status.WATCHING       // 3
+Status.CUSTOM_STATUS  // 4
+Status.COMPETING      // 5
+```
 
-  <br>Example:
-  ```javascript
-  const self = require("@imaentity/selfjs");
-  const client = new self.Client();
-  ```
+---
 
-  + ### 🧑 UserID: The client's user ID.
+# Functions
 
-  + ### 🎟 Token: The client's token.
+## `validateToken(token)`
 
-  + ### 📶 Latency: The latency of the client's websocket connection.
+Checks whether a Discord token is valid without creating a persistent `Client`.
 
-  + ### 🔑 Login (REQUIRED)
-    Logs in the client to Discord.
-    >Paramaters: Token (String), isMobile (Boolean | false), logMsgs (Boolean | false)
+Returns the user's Discord user object if valid, or `null` if the token is invalid.
 
-    <br>Example:
-    ```javascript
-    client.login("012345678910111213141516.123456.123456789101112131415161718");
-    ```
+### Parameters
 
-  + ### 💬 onMessage
-    Function to be executed when a message is received.
-    >Paramaters: msgFunc (Function)
+| Name    | Type     | Description                    |
+| ------- | -------- | ------------------------------ |
+| `token` | `String` | The Discord token to validate. |
 
-    <br>Example:
-    ```javascript
-    client.onMessage(async function(msg) {
-      console.log("Message Received: " + msg.content);
+### Returns
+
+```javascript
+Promise<Object | null>
+```
+
+### Example
+
+```javascript
+const user = await self.validateToken(token);
+
+if(user)
+    console.log(`Logged in as ${user.username}`);
+else
+    console.log("Invalid token");
+```
+
+---
+
+## `createToken(options)`
+
+Attempts to log into a Discord account using an email and password.
+
+If MFA is not enabled, the returned object contains the token immediately.
+
+If MFA is required, the returned object contains the available MFA methods and a `confirmMFA()` function.
+
+### Parameters
+
+| Name               | Type     | Description       |
+| ------------------ | -------- | ----------------- |
+| `options`          | `Object` | Login options.    |
+| `options.email`    | `String` | Account email.    |
+| `options.password` | `String` | Account password. |
+
+### Returns
+
+```javascript
+Promise<Object | null>
+```
+
+### Successful login
+
+```javascript
+{
+    token: String,
+    user_id: String,
+    mfaRequired: false
+}
+```
+
+### MFA login
+
+```javascript
+{
+    user_id: String,
+    mfaRequired: true,
+    mfaMethods: Array<String>,
+    confirmMFA: Function
+}
+```
+
+### Example
+
+```javascript
+const login = await self.createToken({
+    email: "discord@example.com",
+    password: "password"
+});
+
+if(!login)
+    throw new Error("Login failed");
+
+if(!login.mfaRequired) {
+    console.log(login.token);
+} else {
+    console.log("MFA methods:", login.mfaMethods);
+
+    const result = await login.confirmMFA("totp", {
+        code: "123456"
     });
-    ```
-
-  + ### ✏ onMessageEdit
-    Function to be executed when a message is edited.
-    >Paramaters: editFunc (Function)
-
-    <br>Example:
-    ```javascript
-    client.onMessageEdit(async function(msg) {
-      console.log("Message Edited: " + msg.content);
-    });
-    ```
-
-  + ### 🚮 onMessageDelete
-    Function to be executed when a message is deleted.
-    Deleted message objects only receive the channel and message ids.
-    >Paramaters: deleteFunc (Function)
-
-    <br>Example:
-    ```javascript
-    client.onMessageDelete(async function(msg) {
-      console.log("Message Deleted: " + msg.id);
-    });
-    ```
-
-  + ### 🕶 onStatusUpdate
-    Function to be executed when a status update occurs.
-    >Paramaters: statusFunc (Function)
-
-    <br>Example:
-    ```javascript
-    client.onStatusUpdate(async function(status) {
-      console.log(status);
-    });
-    ```
-  
-  + ### 🔏 getDMChannel
-    Gets the Direct Message (DM) channel for the specified user.
-    >Paramaters: userID (String)
-
-    <br>Example:
-    ```javascript
-    client.getDMChannel("01234567891011121314");
-    ```
-
-  + ### 🧪 getRoles
-    Gets the roles for a user in a server.
-    >Paramaters: serverID (String), userID (String)
-
-    <br>Example:
-    ```javascript
-    client.getRoles("01234567891011121314", "41312111019876543210");
-    ```
-
-  + ### 📁 uploadFile
-    Uploads a file to the specified channel.
-    >Paramaters: channelID (String), fileName (String), isSpoiled (Boolean | false), msgContent (String | ""), messageID (String | null)
-
-    <br>Example:
-    ```javascript
-    client.uploadFile("01234567891011121314", "image.png", true, "Message Related to The Image", "41312111019876543210");
-    ```
-  
-  + ### 🔍 search
-    Search for messages in a channel based on the specified options.
-    >Paramaters: channelID (String), options (JSON)
-
-    <br>Example:
-    ```javascript
-    client.search("01234567891011121314", {
-      content: "Hello, world!"
-    });
-    ```
-
-  + ### 👤 getUserProfile
-    Gets the profile of a user.
-    >Paramaters: userID (String)
-
-    <br>Example:
-    ```javascript
-    client.getUserProfile("01234567891011121314");
-    ```
-
-  + ### 👤 getUserData
-    Gets the data of a user.
-    >Paramaters: userID (String)
-
-    <br>Example:
-    ```javascript
-    client.getUserData("01234567891011121314");
-    ```
-  
-  + ### 🔨 setRolesForMember
-    Sets roles for a member in a server.
-    >Paramaters: serverID (String), userID (String), roleIDs (Array)
-
-    <br>Example:
-    ```javascript
-    client.setRolesForMember("01234567891011121314", "41312111019876543210", [
-      "1285712985712985712",
-      "1284578912561872568",
-      "9127498127459812749"
-    ]);
-    ```
-
-  + ### 🗣 sendMessage
-    Sends a message to a specified channel.
-    >Paramaters: channelID (String), message (String)
-
-    <br>Example:
-    ```javascript
-    client.sendMessage("01234567891011121314", "Message");
-    ```
-  
-  + ### 👨🏻‍🤝‍👨🏻 replyToMessage
-    Replies to a specified message.
-    >Paramaters: channelID (String), messageID (String), message (String)
-
-    <br>Example:
-    ```javascript
-    client.replyToMessage("01234567891011121314", "41312111019876543210", "Replied Message");
-    ```
-
-  + ### 📔 createChannel
-    Creates a channel in a server based on the specified options.
-    >Paramaters: guildID (String), name (String), type (Int), parentID (String | null)
-
-    <br>Example:
-    ```javascript
-    // 0 = GUILD_TEXT
-
-    client.createChannel("01234567891011121314", "new-channel", 0, "41312111019876543210");
-    ```
-
-  + ### 👑 setChannelPermissons
-    Sets a users permissions in a channel based on the specified options.
-    >Paramaters: channelID (String), userID (String), allow (String | 0), deny (String | 0)
-
-    <br>Example:
-    ```javascript
-    client.setChannelPermissons("01234567891011121314", "41312111019876543210");
-    ```
-
-  + ### 📖 getMessages
-    Gets messages from a channel with a limit.
-    >Paramaters: channelID (String), limit (Int)
-
-    <br>Example:
-    ```javascript
-    client.getMessages("01234567891011121314", 10);
-    ```
-
-  + ### 🏙 getUsers
-    Gets users from a guild.
-    >Paramaters: guildID (String)
-
-    <br>Example:
-    ```javascript
-    client.getUsers("01234567891011121314");
-    ```
-
-  + ### ❌ removeFromChannel
-    Removes a user from a channel.
-    >Paramaters: channelID (String), userID (String)
-
-    <br>Example:
-    ```javascript
-    client.removeFromChannel("01234567891011121314", "41312111019876543210");
-    ```
-
-  + ### 🏃‍♀️ leaveChannel
-    Leaves a channel.
-    >Paramaters: channelID (String)
-
-    <br>Example:
-    ```javascript
-    client.leaveChannel("01234567891011121314");
-    ```
-  
-  + ### 📞 ring
-    Starts a call with the specified users in a channel.
-    >Paramaters: channelID (String), userIDs (Array)
-
-    <br>Example:
-    ```javascript
-    client.ring("01234567891011121314", [
-      "12549812509818205",
-      "19024578912857987"
-    ]);
-    ```
-
-  + ### 📴 stopRinging
-    Stops ringing the specified users in a channel.
-    >Paramaters: channelID (String), userIDs (Array)
-
-    <br>Example:
-    ```javascript
-    client.stopRinging("01234567891011121314", [
-      "12549812509818205",
-      "19024578912857987"
-    ]);
-    ```
-
-  + ### ➕ addToChannel
-    Adds a user to a channel.
-    >Paramaters: channelID (String), userID (String)
-
-    <br>Example:
-    ```javascript
-    client.addToChannel("01234567891011121314", "41312111019876543210");
-    ```
-
-  + ### 📷 getAvatar
-    Gets the avatar of a user.
-    >Paramaters: userID (String), size (Int | 256)
-
-    <br>Example:
-    ```javascript
-    client.getAvatar("01234567891011121314");
-    ```
-  
-  + ### 🤼 addFriend
-    Sends a friend request to a user.
-    >Paramaters: userID (String)
-
-    <br>Example:
-    ```javascript
-    client.addFriend("01234567891011121314");
-    ```
-
-  + ### ➕ createServer
-    Creates a server with the given options.
-    >Paramaters: options ({name: String, icon: String | null})
-
-    <br>Example:
-    ```javascript
-    client.createServer({name: "My Server", icon: "data:image/png;base64,aGloaSA6Mw=="});
-    ```
-
-  + ### 🖊 editMessage
-    Edits a message.
-    >Paramaters: channelID (String), messageID (String), message (String)
-
-    <br>Example:
-    ```javascript
-    client.editMessage("01234567891011121314", "41312111019876543210", "Edited Message");
-    ```
-
-  + ### 👋 removeFriend
-    Removes a user from the friend list.
-    >Paramaters: userID (String)
-
-    <br>Example:
-    ```javascript
-    client.removeFriend("01234567891011121314");
-    ```
-
-  + ### 📛 renameChannel
-    Renames a channel.
-    >Paramaters: channelID (String), channelName (String)
-
-    <br>Example:
-    ```javascript
-    client.renameChannel("01234567891011121314", "Renamed Channel");
-    ```
-
-  + ### ❎ block
-    Blocks a user.
-    >Paramaters: userID (String)
-
-    <br>Example:
-    ```javascript
-    client.block("01234567891011121314");
-    ```
-
-  + ### ✅ unblock
-    Unblocks a user.
-    >Paramaters: userID (String)
-
-    <br>Example:
-    ```javascript
-    client.unblock("01234567891011121314");
-    ```
-
-  + ### 🚮 deleteMessage
-    Deletes a message.
-    >Paramaters: channelID (String), messageID (String)
-
-    <br>Example:
-    ```javascript
-    client.deleteMessage("01234567891011121314", "41312111019876543210");
-    ```
-
-  + ### 🗿 setStatus
-    Sets the status of the client.
-    >Paramaters: status (String), activites (Array), afk (Boolean | false)
-
-    <br>Example:
-    ```javascript
-    client.setStatus("dnd", [{
-        name: "with the discord API",
-        type: self.status.PLAYING
-    }]);
-    ```
-
-  + ### 🤼 createGroupChat
-    Creates a new channel with the specified users.
-    >Paramaters: userIDs (Array)
-
-    <br>Example:
-    ```javascript
-    client.createGroupChat([
-      "12847128957125",
-      "12905901285798",
-      "64837698943868"
-    ]);
-    ```
-
-  + ### 🎹 startTyping
-    Simulates the client typing in a channel.
-    >Paramaters: channelID (String)
-
-    <br>Example:
-    ```javascript
-    client.startTyping("01234567891011121314");
-    ```
-
-  + ### 📌 pinMessage
-    Pins a message in a channel.
-    >Paramaters: channelID (String), messageID (String)
-
-    <br>Example:
-    ```javascript
-    client.pinMessage("01234567891011121314", "41312111019876543210");
-    ```
-
-  + ### ❌ unpinMessage
-    Unpins a message in a channel.
-    >Paramaters: channelID (String), messageID (String)
-
-    <br>Example:
-    ```javascript
-    client.unpinMessage("01234567891011121314", "41312111019876543210");
-    ```
-
-  + ### 📝 editNote
-    Edits a note for a user.
-    >Paramaters: userID (String), note (String)
-
-    <br>Example:
-    ```javascript
-    client.editNote("01234567891011121314", "Edited Note");
-    ```
-
-  + ### 💾 getChannelData
-    Gets data of a channel.
-    >Paramaters: channelID (String)
-
-    <br>Example:
-    ```javascript
-    client.getChannelData("01234567891011121314");
-    ```
-  
-  + ### 👑 transferOwnership
-    Transfers ownership of a channel to another user.
-    >Paramaters: channelID (String), userID (String)
-
-    <br>Example:
-    ```javascript
-    client.transferOwnership("01234567891011121314", "41312111019876543210");
-    ```
-  
-  + ### 🔁 refreshURL
-    Refreshes an expired attachment url.
-    >Paramaters: url (String)
-
-    <br>Example:
-    ```javascript
-    client.refreshURL();
-    ```
+
+    console.log(result);
+}
+```
+
+> [!NOTE]
+> SMS MFA is currently unsupported.
+
+---
+
+## `snowflakeToUTC(snowflake)`
+
+Converts a Discord snowflake into a UTC timestamp.
+
+The returned timestamp is in milliseconds since Unix epoch.
+
+### Parameters
+
+| Name        | Type     | Description        |
+| ----------- | -------- | ------------------ |
+| `snowflake` | `String` | Discord snowflake. |
+
+### Returns
+
+```javascript
+Number
+```
+
+### Example
+
+```javascript
+const timestamp = self.snowflakeToUTC("1329029486758592595");
+
+console.log(new Date(timestamp));
+```
+
+---
+
+## `UTCToSnowflake(timestamp)`
+
+Converts a UTC timestamp into a Discord snowflake.
+
+The generated snowflake only contains the timestamp portion. Worker ID, process ID, and sequence values are zero.
+
+### Parameters
+
+| Name        | Type     | Description                    |
+| ----------- | -------- | ------------------------------ |
+| `timestamp` | `Number` | UTC timestamp in milliseconds. |
+
+### Returns
+
+```javascript
+String
+```
+
+### Example
+
+```javascript
+const snowflake = self.UTCToSnowflake(Date.now());
+
+console.log(snowflake);
+```
+
+---
+
+# Client
+
+`Client` provides an interface for connecting to Discord and interacting with the account.
+
+## Creating a client
+
+```javascript
+const client = new self.Client();
+```
+
+### Options
+
+```javascript
+const client = new self.Client({
+    properties: {
+        os: process.platform,
+        browser: "SelfJS",
+        device: "NodeJS"
+    },
+
+    debugLogs: true,
+
+    intents: 0
+});
+```
+
+| Option       | Type      | Default       | Description                   |
+| ------------ | --------- | ------------- | ----------------------------- |
+| `properties` | `Object`  | `LOGIN_PROPS` | Gateway identify properties.  |
+| `debugLogs`  | `Boolean` | `true`        | Enables SelfJS debug logging. |
+| `intents`    | `Number`  | `null`        | Gateway intents.              |
+
+---
+
+# Properties
+
+## `client.user`
+
+The user object belonging to the logged-in account.
+
+```javascript
+console.log(client.user);
+```
+
+This is populated after the `READY` event.
+
+---
+
+## `client.token`
+
+The token currently being used by the client.
+
+```javascript
+console.log(client.token);
+```
+
+---
+
+## `client.latency`
+
+The time between sending a heartbeat and receiving its acknowledgement.
+
+```javascript
+console.log(client.latency);
+```
+
+The value is in milliseconds.
+
+---
+
+# Login
+
+## `client.login(token)`
+
+Connects the client to the Discord Gateway using the provided token.
+
+### Parameters
+
+| Name    | Type     | Description            |
+| ------- | -------- | ---------------------- |
+| `token` | `String` | Discord account token. |
+
+### Example
+
+```javascript
+client.login(token);
+```
+
+Once connected, events can be received using `client.on()`.
+
+---
+
+# Events
+
+`Client` extends Node.js `EventEmitter`, so events can be listened to using `.on()`.
+
+```javascript
+client.on("MESSAGE_CREATE", message => {
+    console.log(message.content);
+});
+```
+
+## `READY`
+
+Emitted when the client successfully logs in.
+
+```javascript
+client.on("READY", data => {
+    console.log("Logged in as:", data.user.username);
+});
+```
+
+---
+
+## `MESSAGE_CREATE`
+
+Emitted when a message is received.
+
+```javascript
+client.on("MESSAGE_CREATE", message => {
+    console.log(message.content);
+});
+```
+
+The message object also receives:
+
+```javascript
+message.author.self
+```
+
+which is `true` when the message was sent by the current account.
+
+### Preventing automatic acknowledgement
+
+Messages are automatically acknowledged unless they were sent by the current account.
+
+Call:
+
+```javascript
+message.preventACK();
+```
+
+to prevent the automatic acknowledgement.
+
+Example:
+
+```javascript
+client.on("MESSAGE_CREATE", message => {
+    if(message.content === "keep this unread")
+        message.preventACK();
+});
+```
+
+---
+
+## `DISCONNECT`
+
+Emitted when the Gateway connection closes.
+
+```javascript
+client.on("DISCONNECT", () => {
+    console.log("Disconnected");
+});
+```
+
+---
+
+## `INVALID_SESSION`
+
+Emitted when Discord invalidates the current session and it cannot be resumed.
+
+```javascript
+client.on("INVALID_SESSION", () => {
+    console.log("Session invalidated");
+});
+```
+
+---
+
+# Messages
+
+## `client.sendMessage(message)`
+
+Sends a message to a channel.
+
+### Parameters
+
+| Name                        | Type            | Description                |
+| --------------------------- | --------------- | -------------------------- |
+| `message`                   | `Object`        | Message data.              |
+| `message.channel_id`        | `String`        | Channel ID.                |
+| `message.content`           | `String`        | Message content.           |
+| `message.files`             | `Array<Object>` | Optional file attachments. |
+| `message.message_reference` | `Object`        | Optional reply reference.  |
+
+### Reply reference
+
+```javascript
+{
+    id: "123456789",
+    channel_id: "987654321"
+}
+```
+
+### File
+
+A file object can contain:
+
+```javascript
+{
+    filename: "image.png",
+    data: Buffer,
+    spoiled: false
+}
+```
+
+### Example
+
+```javascript
+await client.sendMessage({
+    channel_id: "123456789",
+    content: "Hello!"
+});
+```
+
+### Example with a file
+
+```javascript
+await client.sendMessage({
+    channel_id: "123456789",
+    content: "Here is a file",
+    files: [{
+        filename: "image.png",
+        data: require("fs").readFileSync("image.png"),
+        spoiled: false
+    }]
+});
+```
+
+---
+
+## `client.editMessage(message)`
+
+Edits an existing message.
+
+### Parameters
+
+| Name                 | Type            | Description               |
+| -------------------- | --------------- | ------------------------- |
+| `message`            | `Object`        | Message data.             |
+| `message.id`         | `String`        | Message ID.               |
+| `message.channel_id` | `String`        | Channel ID.               |
+| `message.content`    | `String`        | New message content.      |
+| `message.files`      | `Array<Object>` | Optional new attachments. |
+
+### Example
+
+```javascript
+await client.editMessage({
+    channel_id: "123456789",
+    id: "987654321",
+    content: "Edited message"
+});
+```
+
+---
+
+## `client.getMessages(options)`
+
+Gets recent messages from a channel.
+
+### Parameters
+
+| Name                 | Type     | Description                                  |
+| -------------------- | -------- | -------------------------------------------- |
+| `options.channel_id` | `String` | Channel ID.                                  |
+| `options.limit`      | `Number` | Maximum number of messages.                  |
+| `options.before`     | `String` | Only return messages before this message ID. |
+
+### Returns
+
+```javascript
+Promise<Array>
+```
+
+Messages are returned from newest to oldest.
+
+### Example
+
+```javascript
+const messages = await client.getMessages({
+    channel_id: "123456789",
+    limit: 25
+});
+```
+
+---
+
+## `client.ackMessage(message)`
+
+Acknowledges a message, removing its unread notification.
+
+### Parameters
+
+| Name                 | Type     | Description |
+| -------------------- | -------- | ----------- |
+| `message.channel_id` | `String` | Channel ID. |
+| `message.id`         | `String` | Message ID. |
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+### Example
+
+```javascript
+await client.ackMessage({
+    channel_id: "123456789",
+    id: "987654321"
+});
+```
+
+---
+
+# Reactions
+
+## `client.addReaction(options)`
+
+Adds a reaction to a message.
+
+### Parameters
+
+| Name                 | Type     | Description          |
+| -------------------- | -------- | -------------------- |
+| `options.channel_id` | `String` | Channel ID.          |
+| `options.message_id` | `String` | Message ID.          |
+| `options.emoji`      | `String` | Emoji to react with. |
+
+### Example
+
+```javascript
+await client.addReaction({
+    channel_id: "123456789",
+    message_id: "987654321",
+    emoji: "👍"
+});
+```
+
+---
+
+## `client.removeReaction(options)`
+
+Removes the client's reaction from a message.
+
+### Parameters
+
+| Name                 | Type     | Description      |
+| -------------------- | -------- | ---------------- |
+| `options.channel_id` | `String` | Channel ID.      |
+| `options.message_id` | `String` | Message ID.      |
+| `options.emoji`      | `String` | Emoji to remove. |
+
+### Example
+
+```javascript
+await client.removeReaction({
+    channel_id: "123456789",
+    message_id: "987654321",
+    emoji: "👍"
+});
+```
+
+---
+
+# Search
+
+## `client.search(options)`
+
+Searches for messages in a channel.
+
+### Parameters
+
+| Name                   | Type                            | Description                              |
+| ---------------------- | ------------------------------- | ---------------------------------------- |
+| `options.channel_id`   | `String`                        | Channel ID.                              |
+| `options.content`      | `String`                        | Search message content.                  |
+| `options.authors`      | `Array<String>`                 | Filter by author IDs.                    |
+| `options.mentions`     | `Array<String>`                 | Filter by mentioned user IDs.            |
+| `options.contentTypes` | `Array<String>`                 | Filter by content type.                  |
+| `options.pinned`       | `Boolean`                       | Only return pinned messages.             |
+| `options.authorTypes`  | `Array<String>`                 | Filter by author type.                   |
+| `options.sort`         | `"new" \| "old" \| "relevance"` | Search sorting mode.                     |
+| `options.offset`       | `Number`                        | Number of results to skip.               |
+| `options.after`        | `Number`                        | Only messages after this UTC timestamp.  |
+| `options.before`       | `Number`                        | Only messages before this UTC timestamp. |
+
+### Content types
+
+Valid `contentTypes` values include:
+
+```text
+image
+video
+link
+file
+embed
+sound
+poll
+sticker
+snapshot
+```
+
+### Author types
+
+Valid `authorTypes` values include:
+
+```text
+user
+bot
+webhook
+```
+
+### Sorting
+
+```javascript
+sort: "new"
+sort: "old"
+sort: "relevance"
+```
+
+### Example
+
+```javascript
+const results = await client.search({
+    channel_id: "123456789",
+    content: "hello",
+    sort: "relevance"
+});
+```
+
+### Date filtering
+
+`after` and `before` use UTC timestamps in milliseconds.
+
+```javascript
+const results = await client.search({
+    channel_id: "123456789",
+    after: Date.now() - 86400000
+});
+```
+
+---
+
+# Channels
+
+## `client.getOpenChannels()`
+
+Gets the channels currently present in the account's DM list.
+
+This can contain both direct messages and group DMs.
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+### Example
+
+```javascript
+const channels = await client.getOpenChannels();
+console.log(channels);
+```
+
+---
+
+# Status
+
+## `client.setStatus(options)`
+
+Sets the account's status and activities.
+
+### Parameters
+
+| Name                 | Type                                         | Description            |
+| -------------------- | -------------------------------------------- | ---------------------- |
+| `options.status`     | `"online" \| "idle" \| "dnd" \| "invisible"` | Account status.        |
+| `options.activities` | `Array<Object>`                              | Activities to display. |
+
+Activity objects contain:
+
+```javascript
+{
+    type: Number,
+    name: String
+}
+```
+
+### Example
+
+```javascript
+client.setStatus({
+    status: "dnd",
+
+    activities: [{
+        name: "with the Discord API",
+        type: Status.PLAYING
+    }]
+});
+```
+
+### Custom status
+
+```javascript
+client.setStatus({
+    status: "online",
+
+    activities: [{
+        name: "my custom status",
+        type: Status.CUSTOM_STATUS
+    }]
+});
+```
+
+### Streaming
+
+Streaming activities automatically receive the activity's name as `details`.
+
+```javascript
+client.setStatus({
+    status: "online",
+
+    activities: [{
+        name: "Minecraft",
+        type: Status.STREAMING
+    }]
+});
+```
+
+---
+
+# Authentication
+
+## `client.logout()`
+
+Logs out the current account and closes the Gateway connection.
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+### Example
+
+```javascript
+await client.logout();
+```
+
+---
+
+# Connection
+
+## `client.disconnect(code)`
+
+Closes the current Gateway session.
+
+After disconnecting, the client will no longer receive Gateway events. Call `login()` again to create a new session.
+
+### Parameters
+
+| Name   | Type     | Default | Description           |
+| ------ | -------- | ------- | --------------------- |
+| `code` | `Number` | `1000`  | WebSocket close code. |
+
+### Example
+
+```javascript
+client.disconnect();
+```
+
+Or with a specific close code:
+
+```javascript
+client.disconnect(1000);
+```
+
+---
+
+# Complete Example
+
+```javascript
+const self = require("@imaentity/selfjs");
+
+const client = new self.Client({
+    debugLogs: true
+});
+
+client.on("READY", data => {
+    console.log(`Logged in as ${data.user.username}`);
+});
+
+client.on("MESSAGE_CREATE", async message => {
+    console.log(`${message.author.username}: ${message.content}`);
+
+    if(message.content === "!hello") {
+        await client.sendMessage({
+            channel_id: message.channel_id,
+            content: "Hello!"
+        });
+    }
+});
+
+client.on("DISCONNECT", () => {
+    console.log("Disconnected");
+});
+
+client.login(process.env.DISCORD_TOKEN);
+```
+
+---
+
+# Exported API
+
+SelfJS currently exports:
+
+```javascript
+module.exports = {
+    Status,
+    validateToken,
+    createToken,
+    UTCToSnowflake,
+    snowflakeToUTC,
+    Client
+};
+```
+
+So the following are available:
+
+```javascript
+self.Status
+self.validateToken
+self.createToken
+self.UTCToSnowflake
+self.snowflakeToUTC
+self.Client
+```
