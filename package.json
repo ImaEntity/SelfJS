@@ -1,6 +1,6 @@
 {
     "name": "@imaentity/selfjs",
-    "version": "4.0.0",
+    "version": "4.0.1",
     "description": "Breaking Discord's TOS to bot user accounts.",
     "main": "self.js",
     "repository": {

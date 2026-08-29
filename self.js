@@ -74,7 +74,7 @@ const OPCODES = {
 // Formats JSON in a way that makes the Discord API
 // able to accept random unicode characters
 function unison(jsonData) {
-    return JSON.Stringify(jsonData)?.replace(
+    return JSON.stringify(jsonData)?.replace(
         /[\u007F-\uFFFF]/g,
         c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`
     );
