@@ -2,7 +2,7 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Entity
- * @version 4.0.1
+ * @version 4.1
  */
 
 const EventEmitter = require("events");
@@ -576,7 +576,9 @@ class Client extends EventEmitter {
      * Gets the channels active in the DM list of the user, channels can be both DMs and group chats
      * @returns {Promise<Object>} The list of channels open in the user's DM list
      */
-    getOpenChannels() { return this.#GET({path: "/users/@me/channels"}); }
+    getOpenChannels() {
+        return this.#GET({path: "/users/@me/channels"});
+    }
 
     /**
      * Closes the current session and disconnects from discord
@@ -718,6 +720,152 @@ class Client extends EventEmitter {
         return this.#GET({
             path: `/channels/${options.channel_id}/messages`,
             query: {limit: options.limit, before: options.before}
+        });
+    }
+
+	/**
+	 * Creates a group DM with certain members
+	 * @param {Array<String>} recipients A list of user ids to add to the created group
+	 * @returns {Promise<Object>} The new channel object after creation
+	 */
+	createGroupDM(recipients) {
+		return this.#POST({path: `/users/@me/channels`, body: {recipients}});
+	}
+
+	/**
+	 * Removes a user from a group dm if the logged in account owns the group
+	 * @param {Object} options Options specifying which user to remove and from what group
+	 * @param {String} options.channel_id The id of the group to remove the user from
+	 * @param {String} options.user_id The id of the user to be removed from the group
+	 * @returns {Promise<void>} No content returned on success
+	 */
+	removeFromGroup(options) {
+		return this.#DELETE({path: `/channels/${options.channel_id}/recipients/${options.user_id}`});
+	}
+
+	/**
+	 * Adds a user to a group dm if the logged in account is friends with the user
+	 * @param {Object} options Options specifying which user to add and to what group
+	 * @param {String} options.channel_id The id of the group to add the user to
+	 * @param {String} options.user_id The id of the user to be added to the group
+	 * @returns {Promise<void>} No content returned on success
+	 */
+	addToGroup(options) {
+		return this.#PUT({path: `/channels/${options.channel_id}/recipients/${options.user_id}`});
+	}
+
+	/**
+	 * Transfers ownership of a group to another user if that user is in the group
+	 * @param {Object} options Options specifying which user to give owner and in what group
+	 * @param {String} options.channel_id The id of the group to be transfered
+	 * @param {String} options.user_id The id of the user to given ownership of the group
+	 * @returns {Promise<Object>} The new channel object after the transfer
+	 */
+	transferGroup(options) {
+		return this.#PATCH({
+			path: `/channels/${options.channel_id}`,
+			body: {owner: options.user_id}
+		});
+	}
+
+	/**
+	 * Leaves a group while optionally not notifying members of that group
+	 * @param {Object} options Options specifying what group to leave and if the leave should notify
+	 * @param {String} options.channel_id The id of the group to leave
+	 * @param {Boolean} [options.silent] If true, the group will not receive a leave notification
+	 * @returns {Promise<Object>} The new channel object after the group has been left
+	 */
+	leaveGroup(options) {
+		return this.#DELETE({
+			path: `/channels/${options.channel_id}`,
+			query: {silent: options.silent}
+		});
+	}
+
+	/**
+	 * Shows the typing indicator for other users in a certain channel for 10 seconds
+	 * Calling this again before the indicator expires resets the timer, while sending a message clears the indicator
+	 * @param {String} channel_id The id of the channel to start typing in
+	 * @returns {Promise<void>} No content returned on success
+	 */
+	startTyping(channel_id) {
+		return this.#POST({path: `/channels/${channel_id}/typing`});
+	}
+
+	/**
+	 * Pins a message to a certain channel
+	 * @param {Object} options Specifies the message and channel to pin it in
+	 * @param {String} options.channel_id The id of the channel to pin the message in
+	 * @param {String} options.message_id The id of the message to pin in the channel
+	 * @returns {Promise<void>} No content returned on success
+	 */
+	pinMessage(options) {
+		return this.#PUT({path: `/api/v10/channels/${options.channel_id}/pins/${options.message_id}`});
+	}
+
+	/**
+	 * Unpins a message from a certain channel
+	 * @param {Object} options Specifies the message and channel to unpin it from
+	 * @param {String} options.channel_id The id of the channel to unpin the message from
+	 * @param {String} options.message_id The id of the message to unpin from the channel
+	 * @returns {Promise<void>} No content returned on success
+	 */
+	unpinMessage(options) {
+		return this.#DELETE({path: `/api/v10/channels/${options.channel_id}/pins/${options.message_id}`});
+	}
+
+    /**
+     * Gets the current representation of a channel via its id
+     * Channels can be DMs, group DMs, server text, or server voice channels
+     * @param {String} channel_id
+     * @returns {Promise<Object>} The current channel object
+     */
+    getChannelObject(channel_id) {
+        return this.#GET({path: `/channels/${channel_id}`});
+    }
+
+    /**
+     * Gets the channel object for DMs with a certain user
+     * Getting the channel object also opens the channel in the active DM list
+     * @param {String} user_id The id of the user to get the DM channel of
+     * @returns {Promise<Object>} The DM channel object
+     */
+    getDMChannel(user_id) {
+        return this.#POST({path: "/users/@me/channels", body: {recipients: [user_id]}});
+    }
+
+    /**
+     * Closes and hides the DM channel for a certain user from the active list
+     * @param {String} user_id The id of the user to close the DM channel of
+     * @returns {Promise<Object>} Returns the channel after closing on success
+     */
+    async closeDMChannel(user_id) {
+        const channel = await this.getDMChannel(user_id);
+        if(!("id" in channel)) return null;
+        return this.#DELETE({path: `/channels/${channel.id}`});
+    }
+
+    /**
+     * Get a user's profile if one of the following is true:
+     * The client shares a server with the user, is friends with the user
+     * The user sent a friend request to the client, or the user is a bot
+     * @param {Object} options The options specifying what the response should contain
+     * @param {String} options.user_id The id of the user to request the profile of
+     * @param {Boolean} [options.with_mutual_servers] If true or absent, include mutual servers in the response
+     * @param {Boolean} [options.with_mutual_friends] If true, include mutual friends in the response
+     * @param {Boolean} [options.with_mutual_friends_count] If true, include the number of mutual friends in the response
+     * @param {String} [options.guild_id] If present respond with the server profile for this guild
+     * @returns {Promise<Object>} The user's profile on success, 404 error if no conditions were met
+     */
+    getUserProfile(options) {
+        return this.#GET({
+            path: `/users/${options.user_id}/profile`,
+            query: {
+                guild_id: options.guild_id,
+                with_mutual_guilds: options.with_mutual_servers,
+                with_mutual_friends: options.with_mutual_friends,
+                with_mutual_friends_count: options.with_mutual_friends_count
+            }
         });
     }
 }

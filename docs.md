@@ -17,8 +17,6 @@ npm install @imaentity/selfjs
 const self = require("@imaentity/selfjs");
 ```
 
----
-
 # Constants
 
 ## `Status`
@@ -33,8 +31,6 @@ Status.WATCHING       // 3
 Status.CUSTOM_STATUS  // 4
 Status.COMPETING      // 5
 ```
-
----
 
 # Functions
 
@@ -67,14 +63,10 @@ else
     console.log("Invalid token");
 ```
 
----
-
 ## `createToken(options)`
 
-Attempts to log into a Discord account using an email and password.
-
-If MFA is not enabled, the returned object contains the token immediately.
-
+Attempts to log into a Discord account using an email and password.  
+If MFA is not enabled, the returned object contains the token immediately.  
 If MFA is required, the returned object contains the available MFA methods and a `confirmMFA()` function.
 
 ### Parameters
@@ -136,15 +128,12 @@ if(!login.mfaRequired) {
 }
 ```
 
-> [!NOTE]
+> [!NOTE]  
 > SMS MFA is currently unsupported.
-
----
 
 ## `snowflakeToUTC(snowflake)`
 
-Converts a Discord snowflake into a UTC timestamp.
-
+Converts a Discord snowflake into a UTC timestamp.  
 The returned timestamp is in milliseconds since Unix epoch.
 
 ### Parameters
@@ -167,12 +156,9 @@ const timestamp = self.snowflakeToUTC("1329029486758592595");
 console.log(new Date(timestamp));
 ```
 
----
-
 ## `UTCToSnowflake(timestamp)`
 
-Converts a UTC timestamp into a Discord snowflake.
-
+Converts a UTC timestamp into a Discord snowflake.  
 The generated snowflake only contains the timestamp portion. Worker ID, process ID, and sequence values are zero.
 
 ### Parameters
@@ -194,8 +180,6 @@ const snowflake = self.UTCToSnowflake(Date.now());
 
 console.log(snowflake);
 ```
-
----
 
 # Client
 
@@ -229,8 +213,6 @@ const client = new self.Client({
 | `debugLogs`  | `Boolean` | `true`        | Enables SelfJS debug logging.           |
 | `intents`    | `Number`  | `null`        | Gateway intents, used for bot accounts. |
 
----
-
 # Properties
 
 ## `client.user`
@@ -243,8 +225,6 @@ console.log(client.user);
 
 This is populated after the `READY` event.
 
----
-
 ## `client.token`
 
 The token currently being used by the client.
@@ -252,8 +232,6 @@ The token currently being used by the client.
 ```javascript
 console.log(client.token);
 ```
-
----
 
 ## `client.latency`
 
@@ -264,8 +242,6 @@ console.log(client.latency);
 ```
 
 The value is in milliseconds.
-
----
 
 # Login
 
@@ -287,8 +263,6 @@ client.login(token);
 
 Once connected, events can be received using `client.on()`.
 
----
-
 # Events
 
 `Client` extends Node.js `EventEmitter`, so events can be listened to using `.on()`.
@@ -308,8 +282,6 @@ client.on("READY", data => {
     console.log("Logged in as:", data.user.username);
 });
 ```
-
----
 
 ## `MESSAGE_CREATE`
 
@@ -350,8 +322,6 @@ client.on("MESSAGE_CREATE", message => {
 });
 ```
 
----
-
 ## `DISCONNECT`
 
 Emitted when the Gateway connection closes.
@@ -362,8 +332,6 @@ client.on("DISCONNECT", () => {
 });
 ```
 
----
-
 ## `INVALID_SESSION`
 
 Emitted when Discord invalidates the current session and it cannot be resumed.
@@ -373,8 +341,6 @@ client.on("INVALID_SESSION", () => {
     console.log("Session invalidated");
 });
 ```
-
----
 
 # Messages
 
@@ -436,8 +402,6 @@ await client.sendMessage({
 });
 ```
 
----
-
 ## `client.editMessage(message)`
 
 Edits an existing message.
@@ -461,8 +425,6 @@ await client.editMessage({
     content: "Edited message"
 });
 ```
-
----
 
 ## `client.getMessages(options)`
 
@@ -493,8 +455,6 @@ const messages = await client.getMessages({
 });
 ```
 
----
-
 ## `client.ackMessage(message)`
 
 Acknowledges a message, removing its unread notification.
@@ -521,8 +481,6 @@ await client.ackMessage({
 });
 ```
 
----
-
 # Reactions
 
 ## `client.addReaction(options)`
@@ -547,8 +505,6 @@ await client.addReaction({
 });
 ```
 
----
-
 ## `client.removeReaction(options)`
 
 Removes the client's reaction from a message.
@@ -571,9 +527,25 @@ await client.removeReaction({
 });
 ```
 
----
+# Channels
 
-# Search
+## `client.getOpenChannels()`
+
+Gets the channels currently present in the account's DM list.  
+This can contain both direct messages and group DMs.
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+### Example
+
+```javascript
+const channels = await client.getOpenChannels();
+console.log(channels);
+```
 
 ## `client.search(options)`
 
@@ -650,15 +622,128 @@ const results = await client.search({
 });
 ```
 
----
 
-# Channels
+## `client.createGroupDM(recipients)`
 
-## `client.getOpenChannels()`
+Creates a group DM with the specified users.
 
-Gets the channels currently present in the account's DM list.
+### Parameters
 
-This can contain both direct messages and group DMs.
+| Name         | Type            | Description                   |
+| ------------ | --------------- | ----------------------------- |
+| `recipients` | `Array<String>` | User IDs to add to the group. |
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+The new channel object.
+
+### Example
+
+```javascript
+const group = await client.createGroupDM([
+    "123456789",
+    "987654321"
+]);
+
+console.log(group.id);
+```
+
+## `client.addToGroup(options)`
+
+Adds a user to a group DM. The logged-in account must be friends with the user.
+
+### Parameters
+
+| Name                 | Type     | Description          |
+| -------------------- | -------- | -------------------- |
+| `options.channel_id` | `String` | Group DM channel ID. |
+| `options.user_id`    | `String` | User ID to add.      |
+
+### Returns
+
+```javascript
+Promise<void>
+```
+
+### Example
+
+```javascript
+await client.addToGroup({
+    channel_id: "123456789",
+    user_id: "987654321"
+});
+```
+
+## `client.removeFromGroup(options)`
+
+Removes a user from a group DM. The logged-in account must own the group.
+
+### Parameters
+
+| Name                 | Type     | Description          |
+| -------------------- | -------- | -------------------- |
+| `options.channel_id` | `String` | Group DM channel ID. |
+| `options.user_id`    | `String` | User ID to remove.   |
+
+### Returns
+
+```javascript
+Promise<void>
+```
+
+### Example
+
+```javascript
+await client.removeFromGroup({
+    channel_id: "123456789",
+    user_id: "987654321"
+});
+```
+
+## `client.transferGroup(options)`
+
+Transfers ownership of a group DM to another member.
+
+### Parameters
+
+| Name                 | Type     | Description                   |
+| -------------------- | -------- | ----------------------------- |
+| `options.channel_id` | `String` | Group DM channel ID.          |
+| `options.user_id`    | `String` | User ID to give ownership to. |
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+The updated channel object.
+
+### Example
+
+```javascript
+const group = await client.transferGroup({
+    channel_id: "123456789",
+    user_id: "987654321"
+});
+
+console.log(group.owner_id);
+```
+
+## `client.leaveGroup(options)`
+
+Leaves a group DM.
+
+### Parameters
+
+| Name                 | Type      | Description                                        |
+| -------------------- | --------- | -------------------------------------------------- |
+| `options.channel_id` | `String`  | Group DM channel ID.                               |
+| `options.silent`     | `Boolean` | If `true`, does not notify the group of the leave. |
 
 ### Returns
 
@@ -669,11 +754,228 @@ Promise<Object>
 ### Example
 
 ```javascript
-const channels = await client.getOpenChannels();
-console.log(channels);
+await client.leaveGroup({
+    channel_id: "123456789",
+    silent: true
+});
 ```
 
----
+## `client.startTyping(channel_id)`
+
+Starts the typing indicator in a channel.  
+The indicator lasts for 10 seconds. Calling this again before it expires resets the timer. Sending a message clears the indicator.
+
+### Parameters
+
+| Name         | Type     | Description                    |
+| ------------ | -------- | ------------------------------ |
+| `channel_id` | `String` | Channel ID to start typing in. |
+
+### Returns
+
+```javascript
+Promise<void>
+```
+
+### Example
+
+```javascript
+await client.startTyping("123456789");
+```
+
+## `client.pinMessage(options)`
+
+Pins a message in a channel.
+
+### Parameters
+
+| Name                 | Type     | Description |
+| -------------------- | -------- | ----------- |
+| `options.channel_id` | `String` | Channel ID. |
+| `options.message_id` | `String` | Message ID. |
+
+### Returns
+
+```javascript
+Promise<void>
+```
+
+### Example
+
+```javascript
+await client.pinMessage({
+    channel_id: "123456789",
+    message_id: "987654321"
+});
+```
+
+## `client.unpinMessage(options)`
+
+Unpins a message from a channel.
+
+### Parameters
+
+| Name                 | Type     | Description |
+| -------------------- | -------- | ----------- |
+| `options.channel_id` | `String` | Channel ID. |
+| `options.message_id` | `String` | Message ID. |
+
+### Returns
+
+```javascript
+Promise<void>
+```
+
+### Example
+
+```javascript
+await client.unpinMessage({
+    channel_id: "123456789",
+    message_id: "987654321"
+});
+```
+
+## `client.getChannelObject(channel_id)`
+
+Gets the current channel object using its ID.  
+This works for DMs, group DMs, server text channels, and server voice channels.
+
+### Parameters
+
+| Name         | Type     | Description |
+| ------------ | -------- | ----------- |
+| `channel_id` | `String` | Channel ID. |
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+The current channel object.
+
+### Example
+
+```javascript
+const channel = await client.getChannelObject("123456789");
+
+console.log(channel);
+```
+
+## `client.getDMChannel(user_id)`
+
+Gets the channel object for DMs with a certain user
+Getting the channel object also opens the channel in the active DM list
+
+### Parameters
+
+| Name      | Type     | Description |
+| --------- | -------- | ----------- |
+| `user_id` | `String` | User ID.    |
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+The DM channel object.
+
+### Example
+
+```javascript
+const channel = await client.getDMChannel("123456789");
+
+console.log(channel);
+```
+
+## `client.closeDMChannel(user_id)`
+
+Closes and hides the DM channel for a certain user from the active list
+
+### Parameters
+
+| Name      | Type     | Description |
+| --------- | -------- | ----------- |
+| `user_id` | `String` | User ID.    |
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+The DM channel object.
+
+### Example
+
+```javascript
+const channel = await client.getDMChannel("123456789");
+
+console.log(channel);
+```
+
+# Users
+
+## `client.getUserProfile(options)`
+
+Gets a user's profile.  
+The request succeeds if at least one of these is true:
+
+* The client shares a server with the user.
+* The client is friends with the user.
+* The user has sent a friend request to the client.
+* The user is a bot.
+
+### Parameters
+
+| Name                                | Type      | Description                                    |
+| ----------------------------------- | --------- | ---------------------------------------------- |
+| `options`                           | `Object`  | Profile request options.                       |
+| `options.user_id`                   | `String`  | ID of the user to get.                         |
+| `options.with_mutual_guilds`        | `Boolean` | Include mutual servers. Defaults to `true`.    |
+| `options.with_mutual_friends`       | `Boolean` | Include mutual friends.                        |
+| `options.with_mutual_friends_count` | `Boolean` | Include the number of mutual friends.          |
+| `options.guild_id`                  | `String`  | Get the user's server profile for this server. |
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+The user's profile.
+
+If none of the access conditions are met, Discord returns a `404` error.
+
+### Example
+
+```javascript
+const profile = await client.getUserProfile({
+    user_id: "123456789"
+});
+
+console.log(profile);
+```
+
+### Example with mutual friends
+
+```javascript
+const profile = await client.getUserProfile({
+    user_id: "123456789",
+    with_mutual_friends: true,
+    with_mutual_friends_count: true
+});
+```
+
+### Example with a server profile
+
+```javascript
+const profile = await client.getUserProfile({
+    user_id: "123456789",
+    guild_id: "987654321"
+});
+```
 
 # Status
 
@@ -738,8 +1040,6 @@ client.setStatus({
 });
 ```
 
----
-
 # Authentication
 
 ## `client.logout()`
@@ -757,8 +1057,6 @@ Promise<Object>
 ```javascript
 await client.logout();
 ```
-
----
 
 # Connection
 
@@ -785,8 +1083,6 @@ Or with a specific close code:
 ```javascript
 client.disconnect(1000);
 ```
-
----
 
 # Complete Example
 
@@ -818,8 +1114,6 @@ client.on("DISCONNECT", () => {
 
 client.login(process.env.DISCORD_TOKEN);
 ```
-
----
 
 # Exported API
 
