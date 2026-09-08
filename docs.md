@@ -57,10 +57,8 @@ Promise<Object | null>
 ```javascript
 const user = await self.validateToken(token);
 
-if(user)
-    console.log(`Logged in as ${user.username}`);
-else
-    console.log("Invalid token");
+if(user) console.log(`Logged in as ${user.username}`);
+else console.log("Invalid token");
 ```
 
 ## `createToken(options)`
@@ -112,12 +110,9 @@ const login = await self.createToken({
     password: "password"
 });
 
-if(!login)
-    throw new Error("Login failed");
-
-if(!login.mfaRequired) {
-    console.log(login.token);
-} else {
+if(!login) throw new Error("Login failed");
+if(!login.mfaRequired) console.log(login.token);
+else {
     console.log("MFA methods:", login.mfaMethods);
 
     const result = await login.confirmMFA("totp", {
@@ -152,7 +147,6 @@ Number
 
 ```javascript
 const timestamp = self.snowflakeToUTC("1329029486758592595");
-
 console.log(new Date(timestamp));
 ```
 
@@ -177,7 +171,6 @@ String
 
 ```javascript
 const snowflake = self.UTCToSnowflake(Date.now());
-
 console.log(snowflake);
 ```
 
@@ -202,7 +195,6 @@ const client = new self.Client({
     },
 
     debugLogs: true,
-
     intents: 0
 });
 ```
@@ -441,7 +433,7 @@ Gets recent messages from a channel.
 ### Returns
 
 ```javascript
-Promise<Array>
+Promise<Array<Object>>
 ```
 
 Messages are returned from newest to oldest.
@@ -537,7 +529,7 @@ This can contain both direct messages and group DMs.
 ### Returns
 
 ```javascript
-Promise<Object>
+Promise<Array<Object>>
 ```
 
 ### Example
@@ -858,7 +850,6 @@ The current channel object.
 
 ```javascript
 const channel = await client.getChannelObject("123456789");
-
 console.log(channel);
 ```
 
@@ -885,7 +876,6 @@ The DM channel object.
 
 ```javascript
 const channel = await client.getDMChannel("123456789");
-
 console.log(channel);
 ```
 
@@ -911,7 +901,6 @@ The DM channel object.
 
 ```javascript
 const channel = await client.getDMChannel("123456789");
-
 console.log(channel);
 ```
 
@@ -977,6 +966,128 @@ const profile = await client.getUserProfile({
 });
 ```
 
+# User Settings
+
+## `client.getUserSettings()`
+
+Gets the `PreloadedUserSettings` protobuf containing general account settings.  
+The protobuf is decoded into a JavaScript object.
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+### Example
+
+```javascript
+const settings = await client.getUserSettings();
+console.log(settings);
+```
+
+## `client.getFrecencySettings()`
+
+Gets the `FrecencyUserSettings` protobuf.  
+This contains frecency and favorite data for GIFs, emojis, stickers, and similar items.  
+The protobuf is decoded into a JavaScript object.
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+### Example
+
+```javascript
+const settings = await client.getFrecencySettings();
+console.log(settings);
+```
+
+---
+
+## `client.updateUserSettings(buf)`
+
+Updates the `PreloadedUserSettings` protobuf.  
+The provided object is encoded into a protobuf and sent to Discord.
+
+### Parameters
+
+| Name  | Type     | Description        |
+| ----- | -------- | ------------------ |
+| `buf` | `Object` | New settings data. |
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+The updated settings.
+
+### Example
+
+```javascript
+const settings = await client.updateUserSettings({
+    // settings data
+});
+
+console.log(settings);
+```
+
+## `client.updateFrecencySettings(buf)`
+
+Updates the `FrecencyUserSettings` protobuf.  
+The provided object is encoded into a protobuf and sent to Discord.  
+This controls frecency and favorite data for GIFs, emojis, stickers, and similar items.
+
+### Parameters
+
+| Name  | Type     | Description                 |
+| ----- | -------- | --------------------------- |
+| `buf` | `Object` | New frecency settings data. |
+
+### Returns
+
+```javascript
+Promise<Object>
+```
+
+The updated settings.
+
+### Example
+
+```javascript
+const settings = await client.updateFrecencySettings({
+    // frecency settings data
+});
+
+console.log(settings);
+```
+
+# Servers
+
+## `client.getServerList()`
+
+Gets the full list of servers the account is currently in.
+
+### Returns
+
+```javascript
+Promise<Array<Object>>
+```
+
+An array containing the server objects.
+
+### Example
+
+```javascript
+const servers = await client.getServerList();
+
+console.log(servers);
+```
+
 # Status
 
 ## `client.setStatus(options)`
@@ -1004,7 +1115,6 @@ Activity objects contain:
 ```javascript
 client.setStatus({
     status: "dnd",
-
     activities: [{
         name: "with the Discord API",
         type: Status.PLAYING
@@ -1017,7 +1127,6 @@ client.setStatus({
 ```javascript
 client.setStatus({
     status: "online",
-
     activities: [{
         name: "my custom status",
         type: Status.CUSTOM_STATUS
@@ -1032,7 +1141,6 @@ Streaming activities automatically receive the activity's name as `details`.
 ```javascript
 client.setStatus({
     status: "online",
-
     activities: [{
         name: "Minecraft",
         type: Status.STREAMING
@@ -1088,7 +1196,6 @@ client.disconnect(1000);
 
 ```javascript
 const self = require("@imaentity/selfjs");
-
 const client = new self.Client({
     debugLogs: true
 });

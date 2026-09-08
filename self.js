@@ -2,19 +2,20 @@
  * @name SelfJS
  * @description Breaking Discord's TOS to bot user accounts.
  * @author Entity
- * @version 4.1
+ * @version 4.2
  */
 
+const proto = require("discord-protos");
 const EventEmitter = require("events");
 const https = require("https");
 const ws = require("ws");
 
 const DISCORD_EPOCH = 1420070400000n;
-const SELF_VERSION = "v4.0";
+const SELF_VERSION = "v4.2";
 const WS_ENDPOINT  = "wss://gateway.discord.gg?v=10&encoding=json";
 const LOGIN_PROPS  = {
     os: process.platform,
-	browser: "SelfJS",
+	browser: `SelfJS ${SELF_VERSION}`,
     device: "NodeJS"
 };
 
@@ -190,25 +191,35 @@ async function validateToken(token) {
  * @param {Object} options Options for getting a token
  * @param {String} options.email The email to use for finding a token
  * @param {String} options.password The password to use for getting a token
- * @returns {Promise<Object|null>} An object containing a token, mfa methods and a callback, or null
+ * @returns {Promise<Object>} An object containing a token, mfa methods and a callback, or an error message
  */
 async function createToken(options) {
     const {email, password} = options;
-    if(!email || !password) return null;
+    if(!email || !password) return {
+        success: false,
+        error: "Missing email or password"
+    };
 
     const loginData = await POST({
         path: "/auth/login",
         body: {login: email, password}
     });
 
-    if(!loginData.user_id) return null;
+    if(loginData.captcha_service) return {
+        success: false,
+        error: "Captcha required, but not yet supported",
+        ...loginData
+    };
+
     if(!loginData.mfa) return {
+        success: true,
         token: loginData.token,
         user_id: loginData.user_id,
         mfaRequired: false
     };
 
     return {
+        success: true,
         user_id: loginData.user_id,
         mfaRequired: true,
         mfaMethods: Object.entries(loginData)
@@ -574,10 +585,18 @@ class Client extends EventEmitter {
 
     /**
      * Gets the channels active in the DM list of the user, channels can be both DMs and group chats
-     * @returns {Promise<Object>} The list of channels open in the user's DM list
+     * @returns {Promise<Array<Object>>} The list of channels open in the user's DM list
      */
     getOpenChannels() {
         return this.#GET({path: "/users/@me/channels"});
+    }
+
+    /**
+     * Gets the full list of servers the user is in
+     * @returns {Promise<Array<Object>>} The list of servers
+     */
+    getServerList() {
+        return this.#GET({ path: "/users/@me/guilds" });
     }
 
     /**
@@ -609,7 +628,8 @@ class Client extends EventEmitter {
      * }>} options.activities Used to provide a list of activities
      * 
      * @returns {void}
-     */
+    */
+    // TODO: Send protobuf chunk to endpoint 1
     setStatus(options) {
         for(const activity of options.activities) {
             if(activity.type == Status.CUSTOM_STATUS) {
@@ -714,7 +734,7 @@ class Client extends EventEmitter {
      * @param {String} options.channel_id The channel id to get messages from
      * @param {Number} [options.limit] The max amount of messages to return
      * @param {String} [options.before] Only return messages before this message id
-     * @returns {Promise<Array>} The list of messages in order from newest to oldest
+     * @returns {Promise<Object<Array>>} The list of messages in order from newest to oldest
      */
     getMessages(options) {
         return this.#GET({
@@ -867,6 +887,52 @@ class Client extends EventEmitter {
                 with_mutual_friends_count: options.with_mutual_friends_count
             }
         });
+    }
+
+    /**
+     * Gets the "PreloadedUserSettings" protobuf, containing general user settings
+     * @returns {Promise<Object>} The protobuf content converted to JSON
+     */
+    async getUserSettings() {
+        const buf = await this.#GET({path: "/users/@me/settings-proto/1"});
+        if(buf?.settings) return proto.PreloadedUserSettings.fromBase64(buf.settings);
+        return buf;
+    }
+
+    /**
+     * Gets the "FrecencyUserSettings" protobuf converted to JSON
+     * Containing frecency and favorite data for gifs, emojis, stickers, and other similar things
+     * @returns {Promise<Object>} The protobuf content converted to JSON
+     */
+    async getFrecencySettings() {
+        const buf = await this.#GET({path: "/users/@me/settings-proto/2"});
+        if(buf?.settings) return proto.FrecencyUserSettings.fromBase64(buf.settings);
+        return buf;
+    }
+
+    /**
+     * Updates the "PreloadedUserSettings" protobuf, containing general user settings
+     * @param {Object} buf The new data to set the protobuf to
+     * @returns {Promise<Object>} The updated protobuf stored on the server
+     */
+    async updateUserSettings(buf) {
+        const b64 = proto.PreloadedUserSettings.toBase64(buf);
+        const res = await this.#PATCH({path: "/users/@me/settings-proto/1", body: {settings: b64}});
+        if(res?.settings) return proto.PreloadedUserSettings.fromBase64(res.settings);
+        return res;
+    }
+
+    /**
+     * Updates the "FrecencyUserSettings" protobuf
+     * Contains frecency and favorite data for gifs, emojis, stickers, and other similar things
+     * @param {Object} buf The new data to set the protobuf to
+     * @returns {Promise<Object>} The updated protobuf stored on the server
+     */
+    async updateFrecencySettings(buf) {
+        const b64 = proto.FrecencyUserSettings.toBase64(buf);
+        const res = await this.#PATCH({path: "/users/@me/settings-proto/2", body: {settings: b64}});
+        if(res?.settings) return proto.FrecencyUserSettings.fromBase64(res.settings);
+        return res;
     }
 }
 
